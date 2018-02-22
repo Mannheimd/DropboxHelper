@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -23,6 +24,21 @@ namespace DropboxHelper
         public MainWindow()
         {
             InitializeComponent();
+
+            MessageBox.Show(GetAccessToken().Result);
+        }
+
+        private async Task<string> GetAccessToken()
+        {
+            byte[] token;
+
+            using (FileStream Stream = File.OpenRead(AppDomain.CurrentDomain.BaseDirectory + @"\accesstoken.txt"))
+            {
+                token = new byte[Stream.Length];
+                await Stream.ReadAsync(token, 0, (int)Stream.Length);
+            }
+
+            return Encoding.ASCII.GetString(token);
         }
     }
 }
