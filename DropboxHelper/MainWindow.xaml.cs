@@ -25,10 +25,10 @@ namespace DropboxHelper
         {
             InitializeComponent();
 
-            MessageBox.Show(GetAccessToken().Result);
+            MessageBox.Show(ReadAccessToken().Result);
         }
 
-        private async Task<string> GetAccessToken()
+        private async Task<string> ReadAccessToken()
         {
             string file = AppDomain.CurrentDomain.BaseDirectory + @"\accesstoken.txt";
 
