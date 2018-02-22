@@ -30,9 +30,20 @@ namespace DropboxHelper
 
         private async Task<string> GetAccessToken()
         {
-            using (StreamReader Stream = File.OpenText(AppDomain.CurrentDomain.BaseDirectory + @"\accesstoken.txt"))
+            string file = AppDomain.CurrentDomain.BaseDirectory + @"\accesstoken.txt";
+
+            if (!File.Exists(file))
+                return null;
+            try
             {
-                return await Stream.ReadToEndAsync();
+                using (StreamReader reader = File.OpenText(file))
+                {
+                    return reader.ReadToEndAsync().Result;
+                }
+            }
+            catch
+            {
+                return null;
             }
         }
     }
