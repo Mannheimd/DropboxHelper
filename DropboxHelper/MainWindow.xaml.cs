@@ -119,9 +119,9 @@ namespace DropboxHelper
             MessageBox.Show(msg);
         }
 
-        private async Task<List<Metadata>> ListFolder(DropboxClient client, string path)
+        private async Task<List<Metadata>> ListFolder(DropboxClient client, string path, bool recursive = false)
         {
-            ListFolderResult result = await client.Files.ListFolderAsync(path, true);
+            ListFolderResult result = await client.Files.ListFolderAsync(path, recursive);
             List<Metadata> list = result.Entries.ToList();
 
             MessageBox.Show(list.Count.ToString());
@@ -130,7 +130,6 @@ namespace DropboxHelper
             {
                 result = await client.Files.ListFolderContinueAsync(result.Cursor);
                 list.AddRange(result.Entries.ToList());
-                MessageBox.Show(list.Count.ToString());
             }
 
             return list;
