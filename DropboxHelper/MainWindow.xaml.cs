@@ -15,6 +15,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Dropbox.Api;
 using System.Net.Http;
+using Dropbox.Api.Files;
 
 namespace DropboxHelper
 {
@@ -37,6 +38,8 @@ namespace DropboxHelper
             SetupClient();
 
             await GetCurrentAccount(client);
+
+            await ListFolder(client, "");
         }
 
         string accessToken;
@@ -114,6 +117,37 @@ namespace DropboxHelper
             }
 
             MessageBox.Show(msg);
+        }
+
+        private async Task<ListFolderResult> ListFolder(DropboxClient client, string path)
+        {
+            MessageBox.Show("Starting");
+
+            string msg = "--- Files ---";
+            ListFolderResult list = await client.Files.ListFolderAsync(path);
+
+            // show folders then files
+            foreach (Metadata item in list.Entries.Where(i => i.IsFolder))
+            {
+                msg += string.Format("D  {0}/", item.Name);
+            }
+
+            foreach (Metadata item in list.Entries.Where(i => i.IsFile))
+            {
+                var file = item.AsFile;
+
+                msg += string.Format("F{0,8} {1}",
+                    file.Size,
+                    item.Name);
+            }
+
+            if (list.HasMore)
+            {
+                msg += string.Format("   ...");
+            }
+
+            MessageBox.Show(msg);
+            return list;
         }
     }
 }
