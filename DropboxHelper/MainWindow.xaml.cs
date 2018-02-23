@@ -13,6 +13,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Dropbox.Api;
+using System.Net.Http;
 
 namespace DropboxHelper
 {
@@ -25,7 +27,18 @@ namespace DropboxHelper
         {
             InitializeComponent();
 
-            MessageBox.Show(ReadAccessToken().Result);
+            accessToken = ReadAccessToken().Result;
+        }
+
+        string accessToken;
+        DropboxClient client;
+
+        private void SetupClient()
+        {
+            DropboxClientConfig config = new DropboxClientConfig();
+            config.HttpClient = new HttpClient();
+
+            client = new DropboxClient(accessToken, config);
         }
 
         private async Task<string> ReadAccessToken()
@@ -34,6 +47,7 @@ namespace DropboxHelper
 
             if (!File.Exists(file))
                 return null;
+
             try
             {
                 using (StreamReader reader = File.OpenText(file))
