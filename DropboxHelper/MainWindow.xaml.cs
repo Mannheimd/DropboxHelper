@@ -28,6 +28,10 @@ namespace DropboxHelper
             InitializeComponent();
 
             accessToken = ReadAccessToken().Result;
+
+            SetupClient();
+
+            MessageBox.Show("Hello");
         }
 
         string accessToken;
@@ -35,10 +39,23 @@ namespace DropboxHelper
 
         private void SetupClient()
         {
-            DropboxClientConfig config = new DropboxClientConfig();
-            config.HttpClient = new HttpClient();
+            try
+            {
+                DropboxClientConfig config = new DropboxClientConfig();
+                config.HttpClient = new HttpClient();
 
-            client = new DropboxClient(accessToken, config);
+                client = new DropboxClient(accessToken, config);
+            }
+            catch (HttpException e)
+            {
+                Console.WriteLine("Exception reported from RPC layer");
+                Console.WriteLine("    Status code: {0}", e.StatusCode);
+                Console.WriteLine("    Message    : {0}", e.Message);
+                if (e.RequestUri != null)
+                {
+                    Console.WriteLine("    Request uri: {0}", e.RequestUri);
+                }
+            }
         }
 
         private async Task<string> ReadAccessToken()
