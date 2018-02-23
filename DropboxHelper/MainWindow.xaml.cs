@@ -88,11 +88,6 @@ namespace DropboxHelper
             }
         }
 
-        private async Task<FullAccount> GetCurrentAccount(DropboxClient client)
-        {
-            return await client.Users.GetCurrentAccountAsync();
-        }
-
         private async Task<List<Metadata>> GetFolderContent(DropboxClient client, string path, bool recursive = false)
         {
             ListFolderResult result = await client.Files.ListFolderAsync(path, recursive);
