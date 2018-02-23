@@ -28,8 +28,6 @@ namespace DropboxHelper
             InitializeComponent();
 
             DoTheThing();
-
-            MessageBox.Show("Hello");
         }
 
         public async void DoTheThing()
@@ -55,13 +53,14 @@ namespace DropboxHelper
             }
             catch (HttpException e)
             {
-                Console.WriteLine("Exception reported from RPC layer");
-                Console.WriteLine("    Status code: {0}", e.StatusCode);
-                Console.WriteLine("    Message    : {0}", e.Message);
+                string msg = "Exception reported from RPC layer";
+                msg += string.Format("\n    Status code: {0}", e.StatusCode);
+                msg += string.Format("\n    Message    : {0}", e.Message);
                 if (e.RequestUri != null)
                 {
-                    Console.WriteLine("    Request uri: {0}", e.RequestUri);
+                    msg += string.Format("\n    Request uri: {0}", e.RequestUri);
                 }
+                MessageBox.Show(msg);
             }
         }
 
@@ -85,51 +84,36 @@ namespace DropboxHelper
             }
         }
 
-        //private async Task RunUserTests(DropboxClient client)
-        //{
-        //    await GetCurrentAccount(client);
-
-        //    var path = "/DotNetApi/Help";
-        //    var folder = await CreateFolder(client, path);
-        //    var list = await ListFolder(client, path);
-
-        //    var firstFile = list.Entries.FirstOrDefault(i => i.IsFile);
-        //    if (firstFile != null)
-        //    {
-        //        await Download(client, path, firstFile.AsFile);
-        //    }
-
-        //    await Upload(client, path, "Test.txt", "This is a text file");
-
-        //    await ChunkUpload(client, path, "Binary");
-        //}
-
         private async Task GetCurrentAccount(DropboxClient client)
         {
             var full = await client.Users.GetCurrentAccountAsync();
 
-            Console.WriteLine("Account id    : {0}", full.AccountId);
-            Console.WriteLine("Country       : {0}", full.Country);
-            Console.WriteLine("Email         : {0}", full.Email);
-            Console.WriteLine("Is paired     : {0}", full.IsPaired ? "Yes" : "No");
-            Console.WriteLine("Locale        : {0}", full.Locale);
-            Console.WriteLine("Name");
-            Console.WriteLine("  Display  : {0}", full.Name.DisplayName);
-            Console.WriteLine("  Familiar : {0}", full.Name.FamiliarName);
-            Console.WriteLine("  Given    : {0}", full.Name.GivenName);
-            Console.WriteLine("  Surname  : {0}", full.Name.Surname);
-            Console.WriteLine("Referral link : {0}", full.ReferralLink);
+            string msg = "Located account";
+
+            msg += string.Format("\nAccount id    : {0}", full.AccountId);
+            msg += string.Format("\nCountry       : {0}", full.Country);
+            msg += string.Format("\nEmail         : {0}", full.Email);
+            msg += string.Format("\nIs paired     : {0}", full.IsPaired ? "Yes" : "No");
+            msg += string.Format("\nLocale        : {0}", full.Locale);
+            msg += string.Format("\nName");
+            msg += string.Format("\n  Display  : {0}", full.Name.DisplayName);
+            msg += string.Format("\n  Familiar : {0}", full.Name.FamiliarName);
+            msg += string.Format("\n  Given    : {0}", full.Name.GivenName);
+            msg += string.Format("\n  Surname  : {0}", full.Name.Surname);
+            msg += string.Format("\nReferral link : {0}", full.ReferralLink);
 
             if (full.Team != null)
             {
-                Console.WriteLine("Team");
-                Console.WriteLine("  Id   : {0}", full.Team.Id);
-                Console.WriteLine("  Name : {0}", full.Team.Name);
+                msg += string.Format("\nTeam");
+                msg += string.Format("\n  Id   : {0}", full.Team.Id);
+                msg += string.Format("\n  Name : {0}", full.Team.Name);
             }
             else
             {
-                Console.WriteLine("Team - None");
+                msg += string.Format("\nTeam - None");
             }
+
+            MessageBox.Show(msg);
         }
     }
 }
