@@ -38,9 +38,7 @@ namespace DropboxHelper
 
             SetupClient();
 
-            await GetCurrentAccount(client);
-
-            await ListFolder(client, "");
+            await GetFolderContent(client, "");
         }
 
         string accessToken;
