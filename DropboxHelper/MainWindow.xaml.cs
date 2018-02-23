@@ -27,11 +27,18 @@ namespace DropboxHelper
         {
             InitializeComponent();
 
-            accessToken = ReadAccessToken().Result;
+            DoTheThing();
+
+            MessageBox.Show("Hello");
+        }
+
+        public async void DoTheThing()
+        {
+            accessToken = await ReadAccessToken();
 
             SetupClient();
 
-            MessageBox.Show("Hello");
+            await GetCurrentAccount(client);
         }
 
         string accessToken;
@@ -75,6 +82,53 @@ namespace DropboxHelper
             catch
             {
                 return null;
+            }
+        }
+
+        //private async Task RunUserTests(DropboxClient client)
+        //{
+        //    await GetCurrentAccount(client);
+
+        //    var path = "/DotNetApi/Help";
+        //    var folder = await CreateFolder(client, path);
+        //    var list = await ListFolder(client, path);
+
+        //    var firstFile = list.Entries.FirstOrDefault(i => i.IsFile);
+        //    if (firstFile != null)
+        //    {
+        //        await Download(client, path, firstFile.AsFile);
+        //    }
+
+        //    await Upload(client, path, "Test.txt", "This is a text file");
+
+        //    await ChunkUpload(client, path, "Binary");
+        //}
+
+        private async Task GetCurrentAccount(DropboxClient client)
+        {
+            var full = await client.Users.GetCurrentAccountAsync();
+
+            Console.WriteLine("Account id    : {0}", full.AccountId);
+            Console.WriteLine("Country       : {0}", full.Country);
+            Console.WriteLine("Email         : {0}", full.Email);
+            Console.WriteLine("Is paired     : {0}", full.IsPaired ? "Yes" : "No");
+            Console.WriteLine("Locale        : {0}", full.Locale);
+            Console.WriteLine("Name");
+            Console.WriteLine("  Display  : {0}", full.Name.DisplayName);
+            Console.WriteLine("  Familiar : {0}", full.Name.FamiliarName);
+            Console.WriteLine("  Given    : {0}", full.Name.GivenName);
+            Console.WriteLine("  Surname  : {0}", full.Name.Surname);
+            Console.WriteLine("Referral link : {0}", full.ReferralLink);
+
+            if (full.Team != null)
+            {
+                Console.WriteLine("Team");
+                Console.WriteLine("  Id   : {0}", full.Team.Id);
+                Console.WriteLine("  Name : {0}", full.Team.Name);
+            }
+            else
+            {
+                Console.WriteLine("Team - None");
             }
         }
     }
