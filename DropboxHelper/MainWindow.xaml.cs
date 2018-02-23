@@ -119,34 +119,20 @@ namespace DropboxHelper
             MessageBox.Show(msg);
         }
 
-        private async Task<ListFolderResult> ListFolder(DropboxClient client, string path)
+        private async Task<List<Metadata>> ListFolder(DropboxClient client, string path)
         {
-            MessageBox.Show("Starting");
+            ListFolderResult result = await client.Files.ListFolderAsync(path, true);
+            List<Metadata> list = result.Entries.ToList();
 
-            string msg = "--- Files ---";
-            ListFolderResult list = await client.Files.ListFolderAsync(path);
+            MessageBox.Show(list.Count.ToString());
 
-            // show folders then files
-            foreach (Metadata item in list.Entries.Where(i => i.IsFolder))
+            while (result.HasMore)
             {
-                msg += string.Format("D  {0}/", item.Name);
+                result = await client.Files.ListFolderContinueAsync(result.Cursor);
+                list.AddRange(result.Entries.ToList());
+                MessageBox.Show(list.Count.ToString());
             }
 
-            foreach (Metadata item in list.Entries.Where(i => i.IsFile))
-            {
-                var file = item.AsFile;
-
-                msg += string.Format("F{0,8} {1}",
-                    file.Size,
-                    item.Name);
-            }
-
-            if (list.HasMore)
-            {
-                msg += string.Format("   ...");
-            }
-
-            MessageBox.Show(msg);
             return list;
         }
     }
