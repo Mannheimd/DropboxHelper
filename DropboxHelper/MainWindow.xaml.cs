@@ -13,9 +13,10 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using Dropbox.Api;
 using System.Net.Http;
+using Dropbox.Api;
 using Dropbox.Api.Files;
+using Dropbox.Api.Users;
 
 namespace DropboxHelper
 {
@@ -87,36 +88,9 @@ namespace DropboxHelper
             }
         }
 
-        private async Task GetCurrentAccount(DropboxClient client)
+        private async Task<FullAccount> GetCurrentAccount(DropboxClient client)
         {
-            var full = await client.Users.GetCurrentAccountAsync();
-
-            string msg = "Located account";
-
-            msg += string.Format("\nAccount id    : {0}", full.AccountId);
-            msg += string.Format("\nCountry       : {0}", full.Country);
-            msg += string.Format("\nEmail         : {0}", full.Email);
-            msg += string.Format("\nIs paired     : {0}", full.IsPaired ? "Yes" : "No");
-            msg += string.Format("\nLocale        : {0}", full.Locale);
-            msg += string.Format("\nName");
-            msg += string.Format("\n  Display  : {0}", full.Name.DisplayName);
-            msg += string.Format("\n  Familiar : {0}", full.Name.FamiliarName);
-            msg += string.Format("\n  Given    : {0}", full.Name.GivenName);
-            msg += string.Format("\n  Surname  : {0}", full.Name.Surname);
-            msg += string.Format("\nReferral link : {0}", full.ReferralLink);
-
-            if (full.Team != null)
-            {
-                msg += string.Format("\nTeam");
-                msg += string.Format("\n  Id   : {0}", full.Team.Id);
-                msg += string.Format("\n  Name : {0}", full.Team.Name);
-            }
-            else
-            {
-                msg += string.Format("\nTeam - None");
-            }
-
-            MessageBox.Show(msg);
+            return await client.Users.GetCurrentAccountAsync();
         }
 
         private async Task<List<Metadata>> GetFolderContent(DropboxClient client, string path, bool recursive = false)
