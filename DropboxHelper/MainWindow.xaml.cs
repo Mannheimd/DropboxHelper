@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -38,7 +39,7 @@ namespace DropboxHelper
 
             SetupClient();
 
-            await GetFolderContent(client, "");
+            DropboxFolderContent.ItemsSource = await GetFolderContent(client, "");
         }
 
         string accessToken;
@@ -91,8 +92,6 @@ namespace DropboxHelper
             ListFolderResult result = await client.Files.ListFolderAsync(path, recursive);
             List<Metadata> list = result.Entries.ToList();
 
-            MessageBox.Show(list.Count.ToString());
-
             while (result.HasMore)
             {
                 result = await client.Files.ListFolderContinueAsync(result.Cursor);
@@ -100,6 +99,28 @@ namespace DropboxHelper
             }
 
             return list;
+        }
+    }
+
+    public class BoolToFileFolder_Converter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool && (bool)value == true)
+            {
+                return "File";
+            }
+            else if (value is bool && (bool)value == false)
+            {
+                return "Folder";
+            }
+
+            return "Unrecognised";
+        }
+
+        public object ConvertBack(object value, Type targetType, object Parameter, CultureInfo culture)
+        {
+            throw new Exception("This method is not implemented.");
         }
     }
 }
