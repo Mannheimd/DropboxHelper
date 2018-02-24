@@ -105,7 +105,24 @@ namespace DropboxHelper
 
         private void GetShareLink_Button_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show(((Metadata)DropboxFolderContent.SelectedItem).Name);
+            Metadata selectedItem = DropboxFolderContent.SelectedIndex > -1 ? ((Metadata)DropboxFolderContent.SelectedItem) : null;
+
+            if (selectedItem == null)
+                return;
+
+            if (selectedItem.IsFolder)
+            {
+                MessageBox.Show("This is a folder. Please select a file to share.");
+                return;
+            }
+
+            if (selectedItem.IsDeleted)
+            {
+                MessageBox.Show("This item has been deleted and cannot be shared. I don't even know why it's displaying here. I don't even know why I'm making this error, you should never see it...");
+                return;
+            }
+
+            MessageBox.Show(selectedItem.Name);
         }
 
         #endregion
