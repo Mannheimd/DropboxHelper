@@ -102,10 +102,21 @@ namespace DropboxHelper
             return list;
         }
 
-        private async Task<SharedFileMetadata> GetFileShareMetadata(DropboxClient client, Metadata file)
+        private async Task<SharedLinkMetadata> GetFileShareMetadata(DropboxClient client, Metadata file, string password)
         {
-            GetFileMetadataArg arg = new GetFileMetadataArg(file.PathLower);
-            return await client.Sharing.GetFileMetadataAsync(arg);
+            SharedLinkSettings settings = new SharedLinkSettings(new RequestedVisibility().AsPassword, password);
+            CreateSharedLinkWithSettingsArg arg = new CreateSharedLinkWithSettingsArg(file.PathLower);
+            SharedLinkMetadata result = new SharedLinkMetadata();
+            try
+            {
+                result = await client.Sharing.CreateSharedLinkWithSettingsAsync(arg);
+            }
+            catch(ApiException<GetFileMetadataError> error)
+            {
+                MessageBox.Show(error.Message);
+            }
+
+            return result;
         }
 
         #region UI Inputs
@@ -129,7 +140,9 @@ namespace DropboxHelper
                 return;
             }
 
-            MessageBox.Show(selectedItem.Name);
+            SharedLinkMetadata shareMetadata = await GetFileShareMetadata(client, selectedItem, "password");
+
+            MessageBox.Show(shareMetadata.Url);
         }
 
         #endregion
