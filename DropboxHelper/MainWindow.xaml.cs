@@ -18,6 +18,7 @@ using System.Net.Http;
 using Dropbox.Api;
 using Dropbox.Api.Files;
 using Dropbox.Api.Users;
+using Dropbox.Api.Sharing;
 
 namespace DropboxHelper
 {
@@ -100,7 +101,13 @@ namespace DropboxHelper
 
             return list;
         }
-        
+
+        private async Task<SharedFileMetadata> GetFileShareMetadata(DropboxClient client, Metadata file)
+        {
+            GetFileMetadataArg arg = new GetFileMetadataArg(file.PathLower);
+            return await client.Sharing.GetFileMetadataAsync(arg);
+        }
+
         #region UI Inputs
 
         private void GetShareLink_Button_Click(object sender, RoutedEventArgs e)
@@ -118,7 +125,7 @@ namespace DropboxHelper
 
             if (selectedItem.IsDeleted)
             {
-                MessageBox.Show("This item has been deleted and cannot be shared. I don't even know why it's displaying here. I don't even know why I'm making this error, you should never see it...");
+                MessageBox.Show("This item has been deleted and cannot be shared. I don't even know why it's displaying here. I don't even know why I'm making this error, you should never see it... In fact it might be possible to share the file, I haven't checked. I'm just not going to let you try.");
                 return;
             }
 
