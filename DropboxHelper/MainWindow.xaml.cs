@@ -110,7 +110,7 @@ namespace DropboxHelper
 
         #region UI Inputs
 
-        private void GetShareLink_Button_Click(object sender, RoutedEventArgs e)
+        private async void GetShareLink_Button_Click(object sender, RoutedEventArgs e)
         {
             Metadata selectedItem = DropboxFolderContent.SelectedIndex > -1 ? ((Metadata)DropboxFolderContent.SelectedItem) : null;
 
