@@ -10,7 +10,7 @@
         <local:BoolToFileFolder_Converter x:Key="BoolToFileFolder_Converter"/>
     </Window.Resources>
     <Grid>
-        <ListView x:Name="DropboxFolderContent" Margin="10,10,10.4,9.8">
+        <ListView x:Name="DropboxFolderContent" Margin="10,10,144.4,9.8">
             <ListView.View>
                 <GridView>
                     <GridViewColumn Header="Type" Width="100" DisplayMemberBinding="{Binding IsFile, Converter={StaticResource BoolToFileFolder_Converter}}"/>
@@ -18,6 +18,6 @@
                 </GridView>
             </ListView.View>
         </ListView>
-
+        <Button Content="Get Share Link" HorizontalAlignment="Left" Margin="379,10,0,0" VerticalAlignment="Top" Width="129" Click="GetShareLink_Button_Click"/>
     </Grid>
 </Window>

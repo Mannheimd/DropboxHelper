@@ -100,7 +100,18 @@ namespace DropboxHelper
 
             return list;
         }
+        
+        #region UI Inputs
+
+        private void GetShareLink_Button_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show(((Metadata)DropboxFolderContent.SelectedItem).Name);
+        }
+
+        #endregion
     }
+
+    #region Converters
 
     public class BoolToFileFolder_Converter : IValueConverter
     {
@@ -123,4 +134,6 @@ namespace DropboxHelper
             throw new Exception("This method is not implemented.");
         }
     }
+
+    #endregion
 }
