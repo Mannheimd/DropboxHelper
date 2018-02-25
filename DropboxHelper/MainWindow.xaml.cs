@@ -108,20 +108,31 @@ namespace DropboxHelper
             return list;
         }
 
-        private async Task<SharedLinkMetadata> CreateFileShareLink(DropboxClient client, Metadata file, string password = null, bool forceNewLink = false)
+        private async Task<SharedLinkMetadata> CreateFileShareLink(DropboxClient client, Metadata file, RequestedVisibility requestedVisibility, string password = null, bool forceNewLink = false)
         {
-            if (password != null)
+            SharedLinkMetadata metadata = new SharedLinkMetadata();
+            
+            SharedLinkSettings settings = new SharedLinkSettings();
+
+            if (requestedVisibility == null)
             {
-                SharedLinkSettings settings = new SharedLinkSettings(new RequestedVisibility().AsPassword, password);
+                MessageBox.Show("Null as a bull");
+                return new SharedLinkMetadata();
+            }
+            if (requestedVisibility.IsPassword)
+            {
+                settings = new SharedLinkSettings(requestedVisibility, password);
             }
             else
             {
-                SharedLinkSettings settings = new SharedLinkSettings(new RequestedVisibility().AsPublic);
+                settings = new SharedLinkSettings(requestedVisibility);
             }
-            CreateSharedLinkWithSettingsArg arg = new CreateSharedLinkWithSettingsArg(file.PathLower);
+            
+            CreateSharedLinkWithSettingsArg arg = new CreateSharedLinkWithSettingsArg(file.PathLower, settings);
+
             try
             {
-                return await client.Sharing.CreateSharedLinkWithSettingsAsync(arg);
+                metadata = await client.Sharing.CreateSharedLinkWithSettingsAsync(arg);
             }
             catch(ApiException<CreateSharedLinkWithSettingsError> error)
             {
@@ -133,27 +144,27 @@ namespace DropboxHelper
                         await RevokeFileShareLink(client, currentShare.PreviewUrl);
                         try
                         {
-                            return await client.Sharing.CreateSharedLinkWithSettingsAsync(arg);
+                            metadata = await client.Sharing.CreateSharedLinkWithSettingsAsync(arg);
                         }
                         catch (ApiException<CreateSharedLinkWithSettingsError> error2)
                         {
-                            MessageBox.Show("1 " + error2.ErrorResponse + " " + error2.Message);
                             //TODO: Add error handling
                             return new SharedLinkMetadata();
                         }
                     }
                     else
                     {
-                        return await GetShareLinkMetadata(client, currentShare.PreviewUrl, password);
+                        metadata = await GetShareLinkMetadata(client, currentShare.PreviewUrl, password);
                     }
                 }
                 else
                 {
-                    MessageBox.Show("2 " + error.ErrorResponse + " " + error.Message);
                     //TODO: Add error handling
                     return new SharedLinkMetadata();
                 }
             }
+
+            return metadata;
         }
 
         private async Task<SharedFileMetadata> GetFileShareLink(DropboxClient client, Metadata file)
@@ -164,7 +175,6 @@ namespace DropboxHelper
             }
             catch (ApiException<GetSharedLinkFileError> error)
             {
-                MessageBox.Show("3 " + error.ErrorResponse + " " + error.Message);
                 //TODO: Add error handling
                 return new SharedFileMetadata();
             }
@@ -178,7 +188,6 @@ namespace DropboxHelper
             }
             catch (ApiException<RevokeSharedLinkError> error)
             {
-                MessageBox.Show("4 " + error.ErrorResponse + " " + error.Message);
                 //TODO: Add error handling
             }
         }
@@ -191,7 +200,6 @@ namespace DropboxHelper
             }
             catch (ApiException<SharedLinkError> error)
             {
-                MessageBox.Show("5 " + error.ErrorResponse + " " + error.Message);
                 //TODO: Add error handling
                 return new SharedLinkMetadata();
             }
@@ -218,7 +226,7 @@ namespace DropboxHelper
                 return;
             }
 
-            SharedLinkMetadata shareMetadata = await CreateFileShareLink(client, selectedItem);
+            SharedLinkMetadata shareMetadata = await CreateFileShareLink(client, selectedItem, RequestedVisibility.Public.Instance);
 
             try
             {
