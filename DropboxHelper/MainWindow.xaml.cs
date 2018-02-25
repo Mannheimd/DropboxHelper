@@ -236,9 +236,18 @@ namespace DropboxHelper
             }
         }
 
-        private void Up_Button_Click(object sender, RoutedEventArgs e)
+        private async void Up_Button_Click(object sender, RoutedEventArgs e)
         {
+            string currentPath = CurrentDirectoryPath_Label.Content.ToString();
 
+            if (!currentPath.Contains('/'))
+                return;
+
+            int slashPos = currentPath.LastIndexOf('/');
+            
+            string newPath = currentPath.Substring(0, slashPos);
+
+            await ChangeToFolder(client, newPath);
         }
 
         #endregion
