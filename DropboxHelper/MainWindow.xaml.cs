@@ -220,7 +220,14 @@ namespace DropboxHelper
 
             SharedLinkMetadata shareMetadata = await CreateFileShareLink(client, selectedItem);
 
-            MessageBox.Show(shareMetadata.Url + "\n" + shareMetadata.LinkPermissions.ResolvedVisibility.IsPassword);
+            try
+            {
+                Clipboard.SetDataObject(shareMetadata.Url);
+            }
+            catch (Exception error)
+            {
+                MessageBox.Show("Unable to copy to clipboard. This can be caused by a an active WebEx session interfering with clipboard operations. Try again after closing your WebEx session.\n\n" + error.Message);
+            }
         }
 
         private async void DropboxFolderContent_ListView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
