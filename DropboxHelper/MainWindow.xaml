@@ -5,12 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DropboxHelper"
         mc:Ignorable="d"
-        Title="DropboxHelper" Height="350" Width="525">
+        Title="DropboxHelper" Height="588.4" Width="877.8">
     <Window.Resources>
         <local:BoolToFileFolder_Converter x:Key="BoolToFileFolder_Converter"/>
     </Window.Resources>
     <Grid>
-        <ListView x:Name="DropboxFolderContent" Margin="10,10,144.4,9.8">
+        <ListView x:Name="DropboxFolderContent" Margin="10,10,144.4,9.8" MouseDoubleClick="DropboxFolderContent_ListView_MouseDoubleClick">
             <ListView.View>
                 <GridView>
                     <GridViewColumn Header="Type" Width="100" DisplayMemberBinding="{Binding IsFile, Converter={StaticResource BoolToFileFolder_Converter}}"/>

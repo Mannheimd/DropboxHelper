@@ -212,9 +212,22 @@ namespace DropboxHelper
                 return;
             }
 
-            SharedLinkMetadata shareMetadata = await CreateFileShareLink(client, selectedItem, "password");
+            SharedLinkMetadata shareMetadata = await CreateFileShareLink(client, selectedItem);
 
             MessageBox.Show(shareMetadata.Url + "\n" + shareMetadata.LinkPermissions.ResolvedVisibility.IsPassword);
+        }
+
+        private async void DropboxFolderContent_ListView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            Metadata selectedItem = DropboxFolderContent.SelectedIndex > -1 ? ((Metadata)DropboxFolderContent.SelectedItem) : null;
+
+            if (selectedItem == null)
+                return;
+
+            if (selectedItem.IsFolder)
+            {
+                DropboxFolderContent.ItemsSource = await GetFolderContent(client, selectedItem.PathLower);
+            }
         }
 
         #endregion
