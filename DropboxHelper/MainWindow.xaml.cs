@@ -230,6 +230,11 @@ namespace DropboxHelper
             }
         }
 
+        private void Up_Button_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
         #endregion
     }
 
