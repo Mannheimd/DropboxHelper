@@ -104,7 +104,14 @@ namespace DropboxHelper
 
         private async Task<SharedLinkMetadata> CreateFileShareLink(DropboxClient client, Metadata file, string password = null, bool forceNewLink = false)
         {
-            SharedLinkSettings settings = new SharedLinkSettings(new RequestedVisibility().AsPassword, password);
+            if (password != null)
+            {
+                SharedLinkSettings settings = new SharedLinkSettings(new RequestedVisibility().AsPassword, password);
+            }
+            else
+            {
+                SharedLinkSettings settings = new SharedLinkSettings(new RequestedVisibility().AsPublic);
+            }
             CreateSharedLinkWithSettingsArg arg = new CreateSharedLinkWithSettingsArg(file.PathLower);
             try
             {
