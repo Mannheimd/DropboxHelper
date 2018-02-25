@@ -18,6 +18,6 @@
                 </GridView>
             </ListView.View>
         </ListView>
-        <Button Content="Get Share Link" HorizontalAlignment="Left" Margin="379,10,0,0" VerticalAlignment="Top" Width="129" Click="GetShareLink_Button_Click"/>
+        <Button Content="Get Share Link" Margin="0,10,10.4,0" VerticalAlignment="Top" Click="GetShareLink_Button_Click" HorizontalAlignment="Right" Width="129"/>
     </Grid>
 </Window>
