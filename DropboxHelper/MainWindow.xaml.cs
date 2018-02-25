@@ -102,21 +102,86 @@ namespace DropboxHelper
             return list;
         }
 
-        private async Task<SharedLinkMetadata> GetFileShareMetadata(DropboxClient client, Metadata file, string password)
+        private async Task<SharedLinkMetadata> CreateFileShareLink(DropboxClient client, Metadata file, string password = null, bool forceNewLink = false)
         {
             SharedLinkSettings settings = new SharedLinkSettings(new RequestedVisibility().AsPassword, password);
             CreateSharedLinkWithSettingsArg arg = new CreateSharedLinkWithSettingsArg(file.PathLower);
-            SharedLinkMetadata result = new SharedLinkMetadata();
             try
             {
-                result = await client.Sharing.CreateSharedLinkWithSettingsAsync(arg);
+                return await client.Sharing.CreateSharedLinkWithSettingsAsync(arg);
             }
-            catch(ApiException<GetFileMetadataError> error)
+            catch(ApiException<CreateSharedLinkWithSettingsError> error)
             {
-                MessageBox.Show(error.Message);
+                if (error.ErrorResponse.IsSharedLinkAlreadyExists)
+                {
+                    SharedFileMetadata currentShare = await GetFileShareLink(client, file);
+                    if (forceNewLink)
+                    {
+                        await RevokeFileShareLink(client, currentShare.PreviewUrl);
+                        try
+                        {
+                            return await client.Sharing.CreateSharedLinkWithSettingsAsync(arg);
+                        }
+                        catch (ApiException<CreateSharedLinkWithSettingsError> error2)
+                        {
+                            MessageBox.Show("1 " + error2.ErrorResponse + " " + error2.Message);
+                            //TODO: Add error handling
+                            return new SharedLinkMetadata();
+                        }
+                    }
+                    else
+                    {
+                        return await GetShareLinkMetadata(client, currentShare.PreviewUrl, password);
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("2 " + error.ErrorResponse + " " + error.Message);
+                    //TODO: Add error handling
+                    return new SharedLinkMetadata();
+                }
             }
+        }
 
-            return result;
+        private async Task<SharedFileMetadata> GetFileShareLink(DropboxClient client, Metadata file)
+        {
+            try
+            {
+                return await client.Sharing.GetFileMetadataAsync(file.PathLower);
+            }
+            catch (ApiException<GetSharedLinkFileError> error)
+            {
+                MessageBox.Show("3 " + error.ErrorResponse + " " + error.Message);
+                //TODO: Add error handling
+                return new SharedFileMetadata();
+            }
+        }
+
+        private async Task RevokeFileShareLink(DropboxClient client, string url)
+        {
+            try
+            {
+                await client.Sharing.RevokeSharedLinkAsync(url);
+            }
+            catch (ApiException<RevokeSharedLinkError> error)
+            {
+                MessageBox.Show("4 " + error.ErrorResponse + " " + error.Message);
+                //TODO: Add error handling
+            }
+        }
+
+        private async Task<SharedLinkMetadata> GetShareLinkMetadata(DropboxClient client, string url, string password)
+        {
+            try
+            {
+                return await client.Sharing.GetSharedLinkMetadataAsync(url);
+            }
+            catch (ApiException<SharedLinkError> error)
+            {
+                MessageBox.Show("5 " + error.ErrorResponse + " " + error.Message);
+                //TODO: Add error handling
+                return new SharedLinkMetadata();
+            }
         }
 
         #region UI Inputs
@@ -140,9 +205,9 @@ namespace DropboxHelper
                 return;
             }
 
-            SharedLinkMetadata shareMetadata = await GetFileShareMetadata(client, selectedItem, "password");
+            SharedLinkMetadata shareMetadata = await CreateFileShareLink(client, selectedItem, "password");
 
-            MessageBox.Show(shareMetadata.Url);
+            MessageBox.Show(shareMetadata.Url + "\n" + shareMetadata.LinkPermissions.ResolvedVisibility.IsPassword);
         }
 
         #endregion
