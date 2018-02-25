@@ -40,7 +40,7 @@ namespace DropboxHelper
 
             SetupClient();
 
-            DropboxFolderContent.ItemsSource = await GetFolderContent(client, "");
+            await ChangeToFolder(client, "");
         }
 
         string accessToken;
@@ -88,7 +88,13 @@ namespace DropboxHelper
             }
         }
 
-        private async Task<List<Metadata>> GetFolderContent(DropboxClient client, string path, bool recursive = false)
+        private async Task ChangeToFolder(DropboxClient client, string path, bool recursive = false)
+        {
+            DropboxFolderContent.ItemsSource = await GetFolderContent(client, path, recursive);
+            CurrentDirectoryPath_Label.Content = path;
+        }
+
+        private async Task<List<Metadata>> GetFolderContent(DropboxClient client, string path, bool recursive)
         {
             ListFolderResult result = await client.Files.ListFolderAsync(path, recursive);
             List<Metadata> list = result.Entries.ToList();
@@ -226,7 +232,7 @@ namespace DropboxHelper
 
             if (selectedItem.IsFolder)
             {
-                DropboxFolderContent.ItemsSource = await GetFolderContent(client, selectedItem.PathLower);
+                await ChangeToFolder(client, selectedItem.PathLower);
             }
         }
 

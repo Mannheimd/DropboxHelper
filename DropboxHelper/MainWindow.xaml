@@ -19,7 +19,7 @@
             </ListView.View>
         </ListView>
         <Button Content="Get Share Link" Margin="0,33,10.2,0" VerticalAlignment="Top" Click="GetShareLink_Button_Click" HorizontalAlignment="Right" Width="129"/>
-        <Label Content="/" HorizontalAlignment="Left" Margin="57,7,0,0" VerticalAlignment="Top" Width="675"/>
+        <Label x:Name="CurrentDirectoryPath_Label" Content="" Margin="57,7,144.2,0" VerticalAlignment="Top"/>
         <Button Content="Up" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="42" Click="Up_Button_Click"/>
     </Grid>
 </Window>
