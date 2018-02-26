@@ -172,7 +172,12 @@ namespace DropboxHelper
             return list;
         }
 
-        public static async Task<SharedLinkMetadata> CreateFileShareLink(DropboxClient client, Metadata file, RequestedVisibility requestedVisibility, string password = null)
+        public static async Task<SharedLinkMetadata> ShareFile(DropboxClient client, Metadata file, RequestedVisibility requestedVisibility, string password = null, bool forceNewLink = false)
+        {
+            return new SharedLinkMetadata();
+        }
+
+        public static async Task<SharedLinkMetadata> CreateFileShareLink(DropboxClient client, Metadata file, RequestedVisibility requestedVisibility, string password)
         {
             SharedLinkSettings settings = new SharedLinkSettings();
             if (requestedVisibility.IsPassword)
