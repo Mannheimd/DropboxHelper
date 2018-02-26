@@ -70,7 +70,7 @@ namespace DropboxHelper
                 return;
             }
 
-            SharedLinkMetadata shareMetadata = await DropboxHandler.CreateFileShareLink(client, selectedItem, RequestedVisibility.Public.Instance);
+            SharedLinkMetadata shareMetadata = await DropboxHandler.ShareFile(client, selectedItem, RequestedVisibility.Public.Instance);
 
             try
             {
