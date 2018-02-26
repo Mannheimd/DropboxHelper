@@ -36,9 +36,7 @@ namespace DropboxHelper
 
         public async void DoTheThing()
         {
-            accessToken = await ReadAccessToken();
-
-            SetupClient();
+            client = DropboxHandler.SetupClient(await DropboxHandler.ReadAccessToken());
 
             await ChangeToFolder(client, "");
         }
@@ -46,14 +44,85 @@ namespace DropboxHelper
         string accessToken;
         DropboxClient client;
 
-        private void SetupClient()
+        private async Task ChangeToFolder(DropboxClient client, string path, bool recursive = false)
+        {
+            DropboxFolderContent.ItemsSource = await DropboxHandler.GetFolderContent(client, path, recursive);
+            CurrentDirectoryPath_Label.Content = path;
+        }
+
+        #region UI Inputs
+
+        private async void GetShareLink_Button_Click(object sender, RoutedEventArgs e)
+        {
+            Metadata selectedItem = DropboxFolderContent.SelectedIndex > -1 ? ((Metadata)DropboxFolderContent.SelectedItem) : null;
+
+            if (selectedItem == null)
+                return;
+
+            if (selectedItem.IsFolder)
+            {
+                MessageBox.Show("This is a folder. Please select a file to share.");
+                return;
+            }
+
+            if (selectedItem.IsDeleted)
+            {
+                MessageBox.Show("This item has been deleted and cannot be shared. I don't even know why it's displaying here. I don't even know why I'm making this error, you should never see it... In fact it might be possible to share the file, I haven't checked. I'm just not going to let you try.");
+                return;
+            }
+
+            SharedLinkMetadata shareMetadata = await DropboxHandler.CreateFileShareLink(client, selectedItem, RequestedVisibility.Public.Instance);
+
+            try
+            {
+                Clipboard.SetDataObject(shareMetadata.Url);
+            }
+            catch (Exception error)
+            {
+                MessageBox.Show("Unable to copy to clipboard. This can be caused by a an active WebEx session interfering with clipboard operations. Try again after closing your WebEx session.\n\n" + error.Message);
+            }
+        }
+
+        private async void DropboxFolderContent_ListView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            Metadata selectedItem = DropboxFolderContent.SelectedIndex > -1 ? ((Metadata)DropboxFolderContent.SelectedItem) : null;
+
+            if (selectedItem == null)
+                return;
+
+            if (selectedItem.IsFolder)
+            {
+                await ChangeToFolder(client, selectedItem.PathLower);
+            }
+        }
+
+        private async void Up_Button_Click(object sender, RoutedEventArgs e)
+        {
+            string currentPath = CurrentDirectoryPath_Label.Content.ToString();
+
+            if (!currentPath.Contains('/'))
+                return;
+
+            int slashPos = currentPath.LastIndexOf('/');
+            
+            string newPath = currentPath.Substring(0, slashPos);
+
+            await ChangeToFolder(client, newPath);
+        }
+
+        #endregion
+    }
+
+    public class DropboxHandler
+    {
+        public static DropboxClient SetupClient(string accessToken)
         {
             try
             {
                 DropboxClientConfig config = new DropboxClientConfig();
                 config.HttpClient = new HttpClient();
 
-                client = new DropboxClient(accessToken, config);
+                return new DropboxClient(accessToken, config);
             }
             catch (HttpException e)
             {
@@ -65,10 +134,12 @@ namespace DropboxHelper
                     msg += string.Format("\n    Request uri: {0}", e.RequestUri);
                 }
                 MessageBox.Show(msg);
+
+                return null;
             }
         }
 
-        private async Task<string> ReadAccessToken()
+        public static async Task<string> ReadAccessToken()
         {
             string file = AppDomain.CurrentDomain.BaseDirectory + @"\accesstoken.txt";
 
@@ -88,13 +159,7 @@ namespace DropboxHelper
             }
         }
 
-        private async Task ChangeToFolder(DropboxClient client, string path, bool recursive = false)
-        {
-            DropboxFolderContent.ItemsSource = await GetFolderContent(client, path, recursive);
-            CurrentDirectoryPath_Label.Content = path;
-        }
-
-        private async Task<List<Metadata>> GetFolderContent(DropboxClient client, string path, bool recursive)
+        public static async Task<List<Metadata>> GetFolderContent(DropboxClient client, string path, bool recursive)
         {
             ListFolderResult result = await client.Files.ListFolderAsync(path, recursive);
             List<Metadata> list = result.Entries.ToList();
@@ -108,7 +173,7 @@ namespace DropboxHelper
             return list;
         }
 
-        private async Task<SharedLinkMetadata> CreateFileShareLink(DropboxClient client, Metadata file, RequestedVisibility requestedVisibility, string password = null, bool forceNewLink = false)
+        public static async Task<SharedLinkMetadata> CreateFileShareLink(DropboxClient client, Metadata file, RequestedVisibility requestedVisibility, string password = null, bool forceNewLink = false)
         {
             SharedLinkMetadata metadata = new SharedLinkMetadata();
             SharedLinkSettings settings = new SharedLinkSettings();
@@ -156,7 +221,7 @@ namespace DropboxHelper
             {
                 metadata = await client.Sharing.CreateSharedLinkWithSettingsAsync(arg);
             }
-            catch(ApiException<CreateSharedLinkWithSettingsError> error)
+            catch (ApiException<CreateSharedLinkWithSettingsError> error)
             {
                 //TODO: Add error handling
                 return new SharedLinkMetadata();
@@ -165,7 +230,7 @@ namespace DropboxHelper
             return metadata;
         }
 
-        private async Task<SharedFileMetadata> GetFileShareLink(DropboxClient client, Metadata file)
+        public static async Task<SharedFileMetadata> GetFileShareLink(DropboxClient client, Metadata file)
         {
             try
             {
@@ -178,7 +243,7 @@ namespace DropboxHelper
             }
         }
 
-        private async Task RevokeFileShareLink(DropboxClient client, string url)
+        public static async Task RevokeFileShareLink(DropboxClient client, string url)
         {
             try
             {
@@ -190,7 +255,7 @@ namespace DropboxHelper
             }
         }
 
-        private async Task<SharedLinkMetadata> GetShareLinkMetadata(DropboxClient client, string url, string password)
+        public static async Task<SharedLinkMetadata> GetShareLinkMetadata(DropboxClient client, string url, string password)
         {
             try
             {
@@ -202,68 +267,6 @@ namespace DropboxHelper
                 return new SharedLinkMetadata();
             }
         }
-
-        #region UI Inputs
-
-        private async void GetShareLink_Button_Click(object sender, RoutedEventArgs e)
-        {
-            Metadata selectedItem = DropboxFolderContent.SelectedIndex > -1 ? ((Metadata)DropboxFolderContent.SelectedItem) : null;
-
-            if (selectedItem == null)
-                return;
-
-            if (selectedItem.IsFolder)
-            {
-                MessageBox.Show("This is a folder. Please select a file to share.");
-                return;
-            }
-
-            if (selectedItem.IsDeleted)
-            {
-                MessageBox.Show("This item has been deleted and cannot be shared. I don't even know why it's displaying here. I don't even know why I'm making this error, you should never see it... In fact it might be possible to share the file, I haven't checked. I'm just not going to let you try.");
-                return;
-            }
-
-            SharedLinkMetadata shareMetadata = await CreateFileShareLink(client, selectedItem, RequestedVisibility.Public.Instance);
-
-            try
-            {
-                Clipboard.SetDataObject(shareMetadata.Url);
-            }
-            catch (Exception error)
-            {
-                MessageBox.Show("Unable to copy to clipboard. This can be caused by a an active WebEx session interfering with clipboard operations. Try again after closing your WebEx session.\n\n" + error.Message);
-            }
-        }
-
-        private async void DropboxFolderContent_ListView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-        {
-            Metadata selectedItem = DropboxFolderContent.SelectedIndex > -1 ? ((Metadata)DropboxFolderContent.SelectedItem) : null;
-
-            if (selectedItem == null)
-                return;
-
-            if (selectedItem.IsFolder)
-            {
-                await ChangeToFolder(client, selectedItem.PathLower);
-            }
-        }
-
-        private async void Up_Button_Click(object sender, RoutedEventArgs e)
-        {
-            string currentPath = CurrentDirectoryPath_Label.Content.ToString();
-
-            if (!currentPath.Contains('/'))
-                return;
-
-            int slashPos = currentPath.LastIndexOf('/');
-            
-            string newPath = currentPath.Substring(0, slashPos);
-
-            await ChangeToFolder(client, newPath);
-        }
-
-        #endregion
     }
 
     #region Converters
