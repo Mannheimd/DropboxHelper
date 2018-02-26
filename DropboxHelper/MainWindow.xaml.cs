@@ -206,17 +206,32 @@ namespace DropboxHelper
             }
         }
 
-        public static async Task<SharedFileMetadata> GetFileShareLink(DropboxClient client, Metadata file)
+        public static async Task<SharedLinkMetadata> GetFileShareLink(DropboxClient client, Metadata file)
         {
+            ListSharedLinksResult sharedLinks;
             try
             {
-                return await client.Sharing.GetFileMetadataAsync(file.PathLower);
+                sharedLinks = await client.Sharing.ListSharedLinksAsync(file.PathLower);
             }
             catch (ApiException<GetSharedLinkFileError> error)
             {
                 //TODO: Add error handling
-                return new SharedFileMetadata();
+                return new SharedLinkMetadata();
             }
+
+            if (sharedLinks.Links.Count < 1)
+            {
+                //TODO: Add error handling
+                return new SharedLinkMetadata();
+            }
+
+            if (sharedLinks.Links[0] == null)
+            {
+                //TODO: Add error handling
+                return new SharedLinkMetadata();
+            }
+
+            return sharedLinks.Links[0];
         }
 
         public static async Task RevokeFileShareLink(DropboxClient client, string url)
