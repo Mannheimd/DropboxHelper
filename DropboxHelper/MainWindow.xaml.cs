@@ -172,61 +172,33 @@ namespace DropboxHelper
             return list;
         }
 
-        public static async Task<SharedLinkMetadata> CreateFileShareLink(DropboxClient client, Metadata file, RequestedVisibility requestedVisibility, string password = null, bool forceNewLink = false)
+        public static async Task<SharedLinkMetadata> CreateFileShareLink(DropboxClient client, Metadata file, RequestedVisibility requestedVisibility, string password = null)
         {
-            SharedLinkMetadata metadata = new SharedLinkMetadata();
             SharedLinkSettings settings = new SharedLinkSettings();
-            CreateSharedLinkWithSettingsArg arg = new CreateSharedLinkWithSettingsArg(file.PathLower, settings);
-
             if (requestedVisibility.IsPassword)
             {
+                if (password == null)
+                {
+                    //TODO: Add error handling
+                    return new SharedLinkMetadata();
+                }
                 settings = new SharedLinkSettings(requestedVisibility, password);
             }
             else
             {
                 settings = new SharedLinkSettings(requestedVisibility);
             }
-
-            SharedFileMetadata currentShare = await GetFileShareLink(client, file);
-
-            if (currentShare.TimeInvited != null)
-            {
-                MessageBox.Show("Is shared");
-
-                if (forceNewLink)
-                {
-                    await RevokeFileShareLink(client, currentShare.PreviewUrl);
-                    try
-                    {
-                        metadata = await client.Sharing.CreateSharedLinkWithSettingsAsync(arg);
-                    }
-                    catch (ApiException<CreateSharedLinkWithSettingsError> error2)
-                    {
-                        //TODO: Add error handling
-                        return new SharedLinkMetadata();
-                    }
-                }
-                else
-                {
-                    metadata = await GetShareLinkMetadata(client, currentShare.PreviewUrl, password);
-                }
-            }
-            else
-            {
-                MessageBox.Show("Not shared");
-            }
-
+            
+            CreateSharedLinkWithSettingsArg arg = new CreateSharedLinkWithSettingsArg(file.PathLower, settings);
             try
             {
-                metadata = await client.Sharing.CreateSharedLinkWithSettingsAsync(arg);
+                return await client.Sharing.CreateSharedLinkWithSettingsAsync(arg);
             }
             catch (ApiException<CreateSharedLinkWithSettingsError> error)
             {
                 //TODO: Add error handling
                 return new SharedLinkMetadata();
             }
-
-            return metadata;
         }
 
         public static async Task<SharedFileMetadata> GetFileShareLink(DropboxClient client, Metadata file)
