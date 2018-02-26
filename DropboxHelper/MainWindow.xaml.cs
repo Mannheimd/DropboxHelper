@@ -41,7 +41,6 @@ namespace DropboxHelper
             await ChangeToFolder(client, "");
         }
 
-        string accessToken;
         DropboxClient client;
 
         private async Task ChangeToFolder(DropboxClient client, string path, bool recursive = false)
