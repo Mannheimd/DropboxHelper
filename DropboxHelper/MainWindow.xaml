@@ -14,7 +14,7 @@
             <ListView.View>
                 <GridView>
                     <GridViewColumn Header="Type" Width="100" DisplayMemberBinding="{Binding IsFile, Converter={StaticResource BoolToFileFolder_Converter}}"/>
-                    <GridViewColumn Header="Name" Width="100" DisplayMemberBinding="{Binding Name}"/>
+                    <GridViewColumn Header="Name" Width="300" DisplayMemberBinding="{Binding Name}"/>
                 </GridView>
             </ListView.View>
         </ListView>
