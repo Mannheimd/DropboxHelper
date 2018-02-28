@@ -70,11 +70,11 @@ namespace DropboxHelper
                 return;
             }
 
-            SharedLinkMetadata shareMetadata = await DropboxHandler.ShareFile(client, selectedItem, RequestedVisibility.Public.Instance);
+            SharedLinkMetadata share = await DropboxHandler.ShareFile(client, selectedItem, RequestedVisibility.Public.Instance);
 
             try
             {
-                Clipboard.SetDataObject(shareMetadata.Url);
+                Clipboard.SetDataObject(share.Url);
             }
             catch (Exception error)
             {
@@ -183,11 +183,11 @@ namespace DropboxHelper
                 }
                 else if (!IsMoreVisiblePermission(existingLink, requestedVisibility))
                 {
-                    //TODO: Look into ways for changing permission of existing link
+                    return await ChangeShareLinkPermissions(client, existingLink.Url, requestedVisibility);
                 }
             }
 
-            return new SharedLinkMetadata();
+            return await CreateFileShareLink(client, file, requestedVisibility, password);
         }
 
         /// <summary>
@@ -309,6 +309,21 @@ namespace DropboxHelper
                 return await client.Sharing.GetSharedLinkMetadataAsync(url);
             }
             catch (ApiException<SharedLinkError> error)
+            {
+                //TODO: Add error handling
+                return new SharedLinkMetadata();
+            }
+        }
+
+        public static async Task<SharedLinkMetadata> ChangeShareLinkPermissions(DropboxClient client, string url, RequestedVisibility requestedVisibility)
+        {
+            SharedLinkSettings settings = new SharedLinkSettings(requestedVisibility);
+
+            try
+            {
+                return await client.Sharing.ModifySharedLinkSettingsAsync(url, settings);
+            }
+            catch (ApiException<ModifySharedLinkSettingsError> error)
             {
                 //TODO: Add error handling
                 return new SharedLinkMetadata();
