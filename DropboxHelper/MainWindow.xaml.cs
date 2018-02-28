@@ -181,6 +181,10 @@ namespace DropboxHelper
                 {
                     await RevokeFileShareLink(client, existingLink.Url);
                 }
+                else if (!IsMoreVisiblePermission(existingLink, requestedVisibility))
+                {
+                    //TODO: Look into ways for changing permission of existing link
+                }
             }
 
             return new SharedLinkMetadata();
