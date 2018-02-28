@@ -174,9 +174,13 @@ namespace DropboxHelper
 
         public static async Task<SharedLinkMetadata> ShareFile(DropboxClient client, Metadata file, RequestedVisibility requestedVisibility, string password = null, bool forceNewLink = false)
         {
-            if (await GetFileShareLink(client, file) != new SharedLinkMetadata())
+            SharedLinkMetadata existingLink = await GetFileShareLink(client, file);
+            if (existingLink != new SharedLinkMetadata())
             {
-
+                if (forceNewLink)
+                {
+                    await RevokeFileShareLink(client, existingLink.Url);
+                }
             }
 
             return new SharedLinkMetadata();
