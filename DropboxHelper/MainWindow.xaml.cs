@@ -36,171 +36,17 @@ namespace DropboxHelper
 
         public async void DoTheThing()
         {
-            accessToken = await ReadAccessToken();
-
-            SetupClient();
+            client = DropboxHandler.SetupClient(await DropboxHandler.ReadAccessToken());
 
             await ChangeToFolder(client, "");
         }
 
-        string accessToken;
         DropboxClient client;
-
-        private void SetupClient()
-        {
-            try
-            {
-                DropboxClientConfig config = new DropboxClientConfig();
-                config.HttpClient = new HttpClient();
-
-                client = new DropboxClient(accessToken, config);
-            }
-            catch (HttpException e)
-            {
-                string msg = "Exception reported from RPC layer";
-                msg += string.Format("\n    Status code: {0}", e.StatusCode);
-                msg += string.Format("\n    Message    : {0}", e.Message);
-                if (e.RequestUri != null)
-                {
-                    msg += string.Format("\n    Request uri: {0}", e.RequestUri);
-                }
-                MessageBox.Show(msg);
-            }
-        }
-
-        private async Task<string> ReadAccessToken()
-        {
-            string file = AppDomain.CurrentDomain.BaseDirectory + @"\accesstoken.txt";
-
-            if (!File.Exists(file))
-                return null;
-
-            try
-            {
-                using (StreamReader reader = File.OpenText(file))
-                {
-                    return reader.ReadToEndAsync().Result;
-                }
-            }
-            catch
-            {
-                return null;
-            }
-        }
 
         private async Task ChangeToFolder(DropboxClient client, string path, bool recursive = false)
         {
-            DropboxFolderContent.ItemsSource = await GetFolderContent(client, path, recursive);
+            DropboxFolderContent.ItemsSource = await DropboxHandler.GetFolderContent(client, path, recursive);
             CurrentDirectoryPath_Label.Content = path;
-        }
-
-        private async Task<List<Metadata>> GetFolderContent(DropboxClient client, string path, bool recursive)
-        {
-            ListFolderResult result = await client.Files.ListFolderAsync(path, recursive);
-            List<Metadata> list = result.Entries.ToList();
-
-            while (result.HasMore)
-            {
-                result = await client.Files.ListFolderContinueAsync(result.Cursor);
-                list.AddRange(result.Entries.ToList());
-            }
-
-            return list;
-        }
-
-        private async Task<SharedLinkMetadata> CreateFileShareLink(DropboxClient client, Metadata file, RequestedVisibility requestedVisibility, string password = null, bool forceNewLink = false)
-        {
-            SharedLinkMetadata metadata = new SharedLinkMetadata();
-            SharedLinkSettings settings = new SharedLinkSettings();
-            CreateSharedLinkWithSettingsArg arg = new CreateSharedLinkWithSettingsArg(file.PathLower, settings);
-
-            if (requestedVisibility.IsPassword)
-            {
-                settings = new SharedLinkSettings(requestedVisibility, password);
-            }
-            else
-            {
-                settings = new SharedLinkSettings(requestedVisibility);
-            }
-
-            SharedFileMetadata currentShare = await GetFileShareLink(client, file);
-
-            if (currentShare.TimeInvited != null)
-            {
-                MessageBox.Show("Is shared");
-
-                if (forceNewLink)
-                {
-                    await RevokeFileShareLink(client, currentShare.PreviewUrl);
-                    try
-                    {
-                        metadata = await client.Sharing.CreateSharedLinkWithSettingsAsync(arg);
-                    }
-                    catch (ApiException<CreateSharedLinkWithSettingsError> error2)
-                    {
-                        //TODO: Add error handling
-                        return new SharedLinkMetadata();
-                    }
-                }
-                else
-                {
-                    metadata = await GetShareLinkMetadata(client, currentShare.PreviewUrl, password);
-                }
-            }
-            else
-            {
-                MessageBox.Show("Not shared");
-            }
-
-            try
-            {
-                metadata = await client.Sharing.CreateSharedLinkWithSettingsAsync(arg);
-            }
-            catch(ApiException<CreateSharedLinkWithSettingsError> error)
-            {
-                //TODO: Add error handling
-                return new SharedLinkMetadata();
-            }
-
-            return metadata;
-        }
-
-        private async Task<SharedFileMetadata> GetFileShareLink(DropboxClient client, Metadata file)
-        {
-            try
-            {
-                return await client.Sharing.GetFileMetadataAsync(file.PathLower);
-            }
-            catch (ApiException<GetSharedLinkFileError> error)
-            {
-                //TODO: Add error handling
-                return new SharedFileMetadata();
-            }
-        }
-
-        private async Task RevokeFileShareLink(DropboxClient client, string url)
-        {
-            try
-            {
-                await client.Sharing.RevokeSharedLinkAsync(url);
-            }
-            catch (ApiException<RevokeSharedLinkError> error)
-            {
-                //TODO: Add error handling
-            }
-        }
-
-        private async Task<SharedLinkMetadata> GetShareLinkMetadata(DropboxClient client, string url, string password)
-        {
-            try
-            {
-                return await client.Sharing.GetSharedLinkMetadataAsync(url);
-            }
-            catch (ApiException<SharedLinkError> error)
-            {
-                //TODO: Add error handling
-                return new SharedLinkMetadata();
-            }
         }
 
         #region UI Inputs
@@ -224,11 +70,11 @@ namespace DropboxHelper
                 return;
             }
 
-            SharedLinkMetadata shareMetadata = await CreateFileShareLink(client, selectedItem, RequestedVisibility.Public.Instance);
+            SharedLinkMetadata share = await DropboxHandler.ShareFile(client, selectedItem, RequestedVisibility.Password.Instance, "password");
 
             try
             {
-                Clipboard.SetDataObject(shareMetadata.Url);
+                Clipboard.SetDataObject(share.Url);
             }
             catch (Exception error)
             {
@@ -264,6 +110,226 @@ namespace DropboxHelper
         }
 
         #endregion
+    }
+
+    public class DropboxHandler
+    {
+        public static DropboxClient SetupClient(string accessToken)
+        {
+            try
+            {
+                DropboxClientConfig config = new DropboxClientConfig();
+                config.HttpClient = new HttpClient();
+
+                return new DropboxClient(accessToken, config);
+            }
+            catch (HttpException e)
+            {
+                string msg = "Exception reported from RPC layer";
+                msg += string.Format("\n    Status code: {0}", e.StatusCode);
+                msg += string.Format("\n    Message    : {0}", e.Message);
+                if (e.RequestUri != null)
+                {
+                    msg += string.Format("\n    Request uri: {0}", e.RequestUri);
+                }
+                MessageBox.Show(msg);
+
+                return null;
+            }
+        }
+
+        public static async Task<string> ReadAccessToken()
+        {
+            string file = AppDomain.CurrentDomain.BaseDirectory + @"\accesstoken.txt";
+
+            if (!File.Exists(file))
+                return null;
+
+            try
+            {
+                using (StreamReader reader = File.OpenText(file))
+                {
+                    return reader.ReadToEndAsync().Result;
+                }
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public static async Task<List<Metadata>> GetFolderContent(DropboxClient client, string path, bool recursive)
+        {
+            ListFolderResult result = await client.Files.ListFolderAsync(path, recursive);
+            List<Metadata> list = result.Entries.ToList();
+
+            while (result.HasMore)
+            {
+                result = await client.Files.ListFolderContinueAsync(result.Cursor);
+                list.AddRange(result.Entries.ToList());
+            }
+
+            return list;
+        }
+
+        public static async Task<SharedLinkMetadata> ShareFile(DropboxClient client, Metadata file, RequestedVisibility requestedVisibility, string password = null, bool forceNewLink = false)
+        {
+            SharedLinkMetadata existingLink = await GetFileShareLink(client, file);
+            if (existingLink != null)
+            {
+                if (forceNewLink)
+                {
+                    await RevokeFileShareLink(client, existingLink.Url);
+                }
+                else if (!IsMoreVisiblePermission(existingLink, requestedVisibility))
+                {
+                    return await ChangeShareLinkPermissions(client, existingLink.Url, requestedVisibility);
+                }
+                else return existingLink;
+            }
+
+            return await CreateFileShareLink(client, file, requestedVisibility, password);
+        }
+
+        /// <summary>
+        /// Checks if link has an equal or more 'visible' permission than requested visibility
+        /// TeamOnly < Password < Public
+        /// </summary>
+        /// <param name="link"></param>
+        /// <param name="requestedVisibility"></param>
+        /// <returns></returns>
+        public static bool IsMoreVisiblePermission(SharedLinkMetadata link, RequestedVisibility requestedVisibility)
+        {
+            if (ConvertResolvedVisibilityToInt(link.LinkPermissions.ResolvedVisibility)
+                >= ConvertRequestedVisibilityToInt(requestedVisibility))
+                return true;
+            else
+                return false;
+        }
+
+        public static int ConvertResolvedVisibilityToInt(ResolvedVisibility visibility)
+        {
+            if (visibility.IsTeamOnly
+                || visibility.IsTeamAndPassword
+                || visibility.IsOther
+                || visibility.IsSharedFolderOnly)
+                return 0;
+            else if (visibility.IsPassword)
+                return 1;
+            else if (visibility.IsPublic)
+                return 2;
+            else
+                return 0;
+        }
+
+        public static int ConvertRequestedVisibilityToInt(RequestedVisibility visibility)
+        {
+            if (visibility.IsTeamOnly)
+                return 0;
+            else if (visibility.IsPassword)
+                return 1;
+            else if (visibility.IsPublic)
+                return 2;
+            else
+                return 0;
+        }
+
+        public static async Task<SharedLinkMetadata> CreateFileShareLink(DropboxClient client, Metadata file, RequestedVisibility requestedVisibility, string password)
+        {
+            SharedLinkSettings settings = new SharedLinkSettings();
+            if (requestedVisibility.IsPassword)
+            {
+                if (password == null)
+                {
+                    //TODO: Add error handling
+                    return new SharedLinkMetadata();
+                }
+                settings = new SharedLinkSettings(requestedVisibility, password);
+            }
+            else
+            {
+                settings = new SharedLinkSettings(requestedVisibility);
+            }
+            
+            CreateSharedLinkWithSettingsArg arg = new CreateSharedLinkWithSettingsArg(file.PathLower, settings);
+            try
+            {
+                return await client.Sharing.CreateSharedLinkWithSettingsAsync(arg);
+            }
+            catch (ApiException<CreateSharedLinkWithSettingsError> error)
+            {
+                //TODO: Add error handling
+                return new SharedLinkMetadata();
+            }
+        }
+
+        public static async Task<SharedLinkMetadata> GetFileShareLink(DropboxClient client, Metadata file)
+        {
+            ListSharedLinksResult sharedLinks;
+            try
+            {
+                sharedLinks = await client.Sharing.ListSharedLinksAsync(file.PathLower);
+            }
+            catch (ApiException<GetSharedLinkFileError> error)
+            {
+                //TODO: Add error handling
+                return null;
+            }
+
+            if (sharedLinks.Links.Count < 1)
+            {
+                //TODO: Add error handling
+                return null;
+            }
+
+            if (sharedLinks.Links[0] == null)
+            {
+                //TODO: Add error handling
+                return null;
+            }
+
+            return sharedLinks.Links[0];
+        }
+
+        public static async Task RevokeFileShareLink(DropboxClient client, string url)
+        {
+            try
+            {
+                await client.Sharing.RevokeSharedLinkAsync(url);
+            }
+            catch (ApiException<RevokeSharedLinkError> error)
+            {
+                //TODO: Add error handling
+            }
+        }
+
+        public static async Task<SharedLinkMetadata> GetShareLinkMetadata(DropboxClient client, string url, string password)
+        {
+            try
+            {
+                return await client.Sharing.GetSharedLinkMetadataAsync(url);
+            }
+            catch (ApiException<SharedLinkError> error)
+            {
+                //TODO: Add error handling
+                return new SharedLinkMetadata();
+            }
+        }
+
+        public static async Task<SharedLinkMetadata> ChangeShareLinkPermissions(DropboxClient client, string url, RequestedVisibility requestedVisibility)
+        {
+            SharedLinkSettings settings = new SharedLinkSettings(requestedVisibility);
+
+            try
+            {
+                return await client.Sharing.ModifySharedLinkSettingsAsync(url, settings);
+            }
+            catch (ApiException<ModifySharedLinkSettingsError> error)
+            {
+                //TODO: Add error handling
+                return new SharedLinkMetadata();
+            }
+        }
     }
 
     #region Converters
