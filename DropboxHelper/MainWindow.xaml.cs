@@ -185,6 +185,7 @@ namespace DropboxHelper
                 {
                     return await ChangeShareLinkPermissions(client, existingLink.Url, requestedVisibility);
                 }
+                else return existingLink;
             }
 
             return await CreateFileShareLink(client, file, requestedVisibility, password);
