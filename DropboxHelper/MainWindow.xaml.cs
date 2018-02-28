@@ -174,7 +174,43 @@ namespace DropboxHelper
 
         public static async Task<SharedLinkMetadata> ShareFile(DropboxClient client, Metadata file, RequestedVisibility requestedVisibility, string password = null, bool forceNewLink = false)
         {
+            if (await GetFileShareLink(client, file) != new SharedLinkMetadata())
+            {
+
+            }
+
             return new SharedLinkMetadata();
+        }
+
+        /// <summary>
+        /// Checks if link1 is an equal or more 'visible' permission than link2
+        /// TeamOnly < Password < Public
+        /// </summary>
+        /// <param name="link1"></param>
+        /// <param name="link2"></param>
+        /// <returns></returns>
+        public static bool IsMoreVisiblePermission(SharedLinkMetadata link1, SharedLinkMetadata link2)
+        {
+            if (ConvertVisibilityLevelToInt(link1.LinkPermissions.ResolvedVisibility)
+                >= ConvertVisibilityLevelToInt(link2.LinkPermissions.ResolvedVisibility))
+                return true;
+            else
+                return false;
+        }
+
+        public static int ConvertVisibilityLevelToInt(ResolvedVisibility visibility)
+        {
+            if (visibility.IsTeamOnly
+                || visibility.IsTeamAndPassword
+                || visibility.IsOther
+                || visibility.IsSharedFolderOnly)
+                return 0;
+            else if (visibility.IsPassword)
+                return 1;
+            else if (visibility.IsPublic)
+                return 2;
+            else
+                return 0;
         }
 
         public static async Task<SharedLinkMetadata> CreateFileShareLink(DropboxClient client, Metadata file, RequestedVisibility requestedVisibility, string password)
