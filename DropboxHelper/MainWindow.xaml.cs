@@ -187,27 +187,39 @@ namespace DropboxHelper
         }
 
         /// <summary>
-        /// Checks if link1 is an equal or more 'visible' permission than link2
+        /// Checks if link has an equal or more 'visible' permission than requested visibility
         /// TeamOnly < Password < Public
         /// </summary>
-        /// <param name="link1"></param>
-        /// <param name="link2"></param>
+        /// <param name="link"></param>
+        /// <param name="requestedVisibility"></param>
         /// <returns></returns>
-        public static bool IsMoreVisiblePermission(SharedLinkMetadata link1, SharedLinkMetadata link2)
+        public static bool IsMoreVisiblePermission(SharedLinkMetadata link, RequestedVisibility requestedVisibility)
         {
-            if (ConvertVisibilityLevelToInt(link1.LinkPermissions.ResolvedVisibility)
-                >= ConvertVisibilityLevelToInt(link2.LinkPermissions.ResolvedVisibility))
+            if (ConvertResolvedVisibilityToInt(link.LinkPermissions.ResolvedVisibility)
+                >= ConvertRequestedVisibilityToInt(requestedVisibility))
                 return true;
             else
                 return false;
         }
 
-        public static int ConvertVisibilityLevelToInt(ResolvedVisibility visibility)
+        public static int ConvertResolvedVisibilityToInt(ResolvedVisibility visibility)
         {
             if (visibility.IsTeamOnly
                 || visibility.IsTeamAndPassword
                 || visibility.IsOther
                 || visibility.IsSharedFolderOnly)
+                return 0;
+            else if (visibility.IsPassword)
+                return 1;
+            else if (visibility.IsPublic)
+                return 2;
+            else
+                return 0;
+        }
+
+        public static int ConvertRequestedVisibilityToInt(RequestedVisibility visibility)
+        {
+            if (visibility.IsTeamOnly)
                 return 0;
             else if (visibility.IsPassword)
                 return 1;
