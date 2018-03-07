@@ -342,6 +342,14 @@ namespace DropboxHelper
             }
         }
 
+        public static async Task<FolderMetadata> HandleCreateFolder(DropboxClient client, string path)
+        {
+            if (await GetFolder(client, path) == null)
+            {
+                CreateFolderResult newFolder = await CreateFolder(client, path);
+            }
+        }
+
         public static async Task<FolderMetadata> GetFolder(DropboxClient client, string path)
         {
             Metadata metadata = new Metadata();
@@ -367,11 +375,12 @@ namespace DropboxHelper
             }
         }
 
-        public static async Task<CreateFolderResult> CreateFolder(DropboxClient client, string path)
+        public static async Task<FolderMetadata> CreateFolder(DropboxClient client, string path)
         {
             try
             {
-                return await client.Files.CreateFolderV2Async(path);
+                CreateFolderResult result = await client.Files.CreateFolderV2Async(path);
+                return result.Metadata;
             }
             catch
             {
