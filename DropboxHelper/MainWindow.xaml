@@ -22,10 +22,10 @@
         <Label x:Name="CurrentDirectoryPath_Label" Content="" Margin="57,7,144.2,0" VerticalAlignment="Top"/>
         <Button Content="Up" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="42" Click="Up_Button_Click"/>
         <TextBox x:Name="FileShareLink_TextBox" Height="23" Margin="0,60,10,0" TextWrapping="NoWrap" VerticalAlignment="Top" HorizontalAlignment="Right" Width="129" IsReadOnly="True"/>
-        <TextBox x:Name="CreateFolder_TicketNumber_TextBox" HorizontalAlignment="Left" Height="23" Margin="731,134,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="129"/>
-        <TextBox x:Name="CreateFolder_AccountName_TextBox" HorizontalAlignment="Left" Height="23" Margin="731,188,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="129"/>
-        <Label Content="Ticket number" HorizontalAlignment="Left" Margin="731,108,0,0" VerticalAlignment="Top" Width="129"/>
-        <Label Content="Account Name" HorizontalAlignment="Left" Margin="731,162,0,0" VerticalAlignment="Top" Width="129"/>
-        <Button Content="Create folder" HorizontalAlignment="Left" Margin="731,216,0,0" VerticalAlignment="Top" Width="129" Click="CreateFolder_Button_Click"/>
+        <TextBox x:Name="CreateFolder_TicketNumber_TextBox" Height="23" Margin="0,134,10,0" TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Right" Width="129"/>
+        <TextBox x:Name="CreateFolder_AccountName_TextBox" Height="23" Margin="0,188,10,0" TextWrapping="Wrap" VerticalAlignment="Top" HorizontalAlignment="Right" Width="129"/>
+        <Label Content="Ticket number" Margin="0,108,10,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="129"/>
+        <Label Content="Account Name" Margin="0,162,10,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="129"/>
+        <Button Content="Create folder" Margin="0,216,10,0" VerticalAlignment="Top" Click="CreateFolder_Button_Click" HorizontalAlignment="Right" Width="129"/>
     </Grid>
 </Window>
