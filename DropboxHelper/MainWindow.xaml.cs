@@ -72,7 +72,7 @@ namespace DropboxHelper
                 return;
             }
 
-            SharedLinkMetadata share = await DropboxHandler.ShareFile(client, selectedItem, RequestedVisibility.Password.Instance, "password");
+            SharedLinkMetadata share = await DropboxHandler.HandleShareFile(client, selectedItem, RequestedVisibility.Password.Instance, "password");
 
             if (share.Url != null)
             {
@@ -183,7 +183,7 @@ namespace DropboxHelper
             return list;
         }
 
-        public static async Task<SharedLinkMetadata> ShareFile(DropboxClient client, Metadata file, RequestedVisibility requestedVisibility, string password = null, bool forceNewLink = false)
+        public static async Task<SharedLinkMetadata> HandleShareFile(DropboxClient client, Metadata file, RequestedVisibility requestedVisibility, string password = null, bool forceNewLink = false)
         {
             SharedLinkMetadata existingLink = await GetFileShareLink(client, file);
             if (existingLink != null)
