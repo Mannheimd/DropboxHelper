@@ -117,7 +117,7 @@ namespace DropboxHelper
 
         private async void CreateFolder_Button_Click(object sender, RoutedEventArgs e)
         {
-            string path = String.Format("{0} - {1}", CreateFolder_AccountName_TextBox, CreateFolder_TicketNumber_TextBox);
+            string path = String.Format("/ExternalUpload/CloudData/{0} - {1}", CreateFolder_AccountName_TextBox.Text, CreateFolder_TicketNumber_TextBox.Text);
             FolderMetadata folder = await DropboxHandler.HandleCreateFolder(client, path);
 
             if (folder == null)
