@@ -344,9 +344,14 @@ namespace DropboxHelper
 
         public static async Task<FolderMetadata> HandleCreateFolder(DropboxClient client, string path)
         {
-            if (await GetFolder(client, path) == null)
+            FolderMetadata currentFolder = await GetFolder(client, path);
+            if (currentFolder == null)
             {
-                CreateFolderResult newFolder = await CreateFolder(client, path);
+                return await CreateFolder(client, path);
+            }
+            else
+            {
+                return currentFolder;
             }
         }
 
