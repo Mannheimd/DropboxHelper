@@ -18,9 +18,9 @@
                 </GridView>
             </ListView.View>
         </ListView>
-        <Button Content="Get Share Link" Margin="0,33,10.2,0" VerticalAlignment="Top" Click="GetShareLink_Button_Click" HorizontalAlignment="Right" Width="129"/>
+        <Button Content="Get Share Link" Margin="0,35,10,0" VerticalAlignment="Top" Click="GetShareLink_Button_Click" HorizontalAlignment="Right" Width="129"/>
         <Label x:Name="CurrentDirectoryPath_Label" Content="" Margin="57,7,144.2,0" VerticalAlignment="Top"/>
         <Button Content="Up" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="42" Click="Up_Button_Click"/>
-        <TextBox x:Name="FileShareLink_TextBox" Height="23" Margin="0,58,10,0" TextWrapping="NoWrap" VerticalAlignment="Top" HorizontalAlignment="Right" Width="129" IsReadOnly="True"/>
+        <TextBox x:Name="FileShareLink_TextBox" Height="23" Margin="0,60,10,0" TextWrapping="NoWrap" VerticalAlignment="Top" HorizontalAlignment="Right" Width="129" IsReadOnly="True"/>
     </Grid>
 </Window>
