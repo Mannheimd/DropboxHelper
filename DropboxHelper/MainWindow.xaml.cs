@@ -341,6 +341,31 @@ namespace DropboxHelper
                 return new SharedLinkMetadata();
             }
         }
+
+        public static async Task<FolderMetadata> GetFolder(DropboxClient client, string path)
+        {
+            Metadata metadata = new Metadata();
+
+            try
+            {
+                metadata = await client.Files.GetMetadataAsync(path);
+            }
+            catch
+            {
+                //TODO: Add error handling
+                return null;
+            }
+
+            if (metadata.IsFolder)
+            {
+                return metadata.AsFolder;
+            }
+            else
+            {
+                //TODO: Add error handling
+                return null;
+            }
+        }
     }
 
     #region Converters
