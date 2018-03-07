@@ -115,9 +115,15 @@ namespace DropboxHelper
             await ChangeToFolder(client, newPath);
         }
 
-        private void CreateFolder_Button_Click(object sender, RoutedEventArgs e)
+        private async void CreateFolder_Button_Click(object sender, RoutedEventArgs e)
         {
+            string path = String.Format("{0} - {1}", CreateFolder_AccountName_TextBox, CreateFolder_TicketNumber_TextBox);
+            FolderMetadata folder = await DropboxHandler.HandleCreateFolder(client, path);
 
+            if (folder == null)
+                return;
+
+            await ChangeToFolder(client, "/ExternalUpload/CloudData/");
         }
 
         #endregion
