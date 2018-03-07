@@ -53,6 +53,8 @@ namespace DropboxHelper
 
         private async void GetShareLink_Button_Click(object sender, RoutedEventArgs e)
         {
+            FileShareLink_TextBox.Text = null;
+
             Metadata selectedItem = DropboxFolderContent.SelectedIndex > -1 ? ((Metadata)DropboxFolderContent.SelectedItem) : null;
 
             if (selectedItem == null)
@@ -72,13 +74,17 @@ namespace DropboxHelper
 
             SharedLinkMetadata share = await DropboxHandler.ShareFile(client, selectedItem, RequestedVisibility.Password.Instance, "password");
 
-            try
+            if (share.Url != null)
             {
-                Clipboard.SetDataObject(share.Url);
-            }
-            catch (Exception error)
-            {
-                MessageBox.Show("Unable to copy to clipboard. This can be caused by a an active WebEx session interfering with clipboard operations. Try again after closing your WebEx session.\n\n" + error.Message);
+                FileShareLink_TextBox.Text = share.Url;
+                try
+                {
+                    Clipboard.SetDataObject(share.Url);
+                }
+                catch (Exception error)
+                {
+                    MessageBox.Show("Unable to copy to clipboard. This can be caused by a an active WebEx session interfering with clipboard operations. Try again after closing your WebEx session.\n\n" + error.Message);
+                }
             }
         }
 
