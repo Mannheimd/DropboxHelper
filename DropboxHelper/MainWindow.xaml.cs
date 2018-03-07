@@ -115,6 +115,11 @@ namespace DropboxHelper
             await ChangeToFolder(client, newPath);
         }
 
+        private void CreateFolder_Button_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
         #endregion
     }
 
