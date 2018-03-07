@@ -366,6 +366,19 @@ namespace DropboxHelper
                 return null;
             }
         }
+
+        public static async Task<CreateFolderResult> CreateFolder(DropboxClient client, string path)
+        {
+            try
+            {
+                return await client.Files.CreateFolderV2Async(path);
+            }
+            catch
+            {
+                //TODO: Add error handling
+                return null;
+            }
+        }
     }
 
     #region Converters
