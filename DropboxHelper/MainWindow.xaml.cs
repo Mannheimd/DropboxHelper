@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -16,6 +17,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Net.Http;
 using Dropbox.Api;
+using Dropbox.Api.Auth
 using Dropbox.Api.Files;
 using Dropbox.Api.Users;
 using Dropbox.Api.Sharing;
@@ -131,6 +133,12 @@ namespace DropboxHelper
 
     public class DropboxHandler
     {
+        private static string accessToken;
+        private static string oAuth2State;
+        private static WebBrowser browser;
+        private static string appKey = "5xpffww5qkvm3hu";
+        private static Uri redirectUri = new Uri("https://localhost/authorise");
+
         public static DropboxClient SetupClient(string accessToken)
         {
             try
@@ -152,6 +160,43 @@ namespace DropboxHelper
                 MessageBox.Show(msg);
 
                 return null;
+            }
+        }
+
+        private static void AcquireNewOAuthToken()
+        {
+            oAuth2State = Guid.NewGuid().ToString("N");
+            Uri authorizeUri = DropboxOAuth2Helper.GetAuthorizeUri(OAuthResponseType.Token, appKey, redirectUri, state: oAuth2State);
+            browser.Navigate(authorizeUri);
+        }
+
+        private static void BrowserNavigating(object sender, NavigatingCancelEventArgs e)
+        {
+            // Shamelessly taken from this example: https://github.com/dropbox/dropbox-sdk-dotnet/blob/master/dropbox-sdk-dotnet/Examples/SimpleTest/LoginForm.xaml.cs
+            if (!e.Uri.ToString().StartsWith(redirectUri.ToString(), StringComparison.OrdinalIgnoreCase))
+            {
+                // we need to ignore all navigation that isn't to the redirect uri.
+                return;
+            }
+
+            try
+            {
+                OAuth2Response result = DropboxOAuth2Helper.ParseTokenFragment(e.Uri);
+                if (result.State != oAuth2State)
+                {
+                    // The state in the response doesn't match the state in the request.
+                    return;
+                }
+
+                accessToken = result.AccessToken;
+            }
+            catch (ArgumentException)
+            {
+                // There was an error in the URI passed to ParseTokenFragment
+            }
+            finally
+            {
+                e.Cancel = true;
             }
         }
 
