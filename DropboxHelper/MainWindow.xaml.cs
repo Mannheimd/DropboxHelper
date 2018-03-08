@@ -17,7 +17,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Net.Http;
 using Dropbox.Api;
-using Dropbox.Api.Auth
+using Dropbox.Api.Auth;
 using Dropbox.Api.Files;
 using Dropbox.Api.Users;
 using Dropbox.Api.Sharing;
@@ -38,7 +38,7 @@ namespace DropboxHelper
 
         public async void DoTheThing()
         {
-            client = DropboxHandler.SetupClient(await DropboxHandler.ReadAccessToken());
+            client = DropboxHandler.SetupClient();
 
             await ChangeToFolder(client, "");
         }
@@ -139,8 +139,10 @@ namespace DropboxHelper
         private static string appKey = "5xpffww5qkvm3hu";
         private static Uri redirectUri = new Uri("https://localhost/authorise");
 
-        public static DropboxClient SetupClient(string accessToken)
+        public static DropboxClient SetupClient()
         {
+            AcquireNewOAuthToken();
+
             try
             {
                 DropboxClientConfig config = new DropboxClientConfig();
