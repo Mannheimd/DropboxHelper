@@ -21,27 +21,17 @@ namespace DropboxHelper
     /// </summary>
     public partial class BrowserWindow : Window
     {
-        private static Uri redirectUri;
-        private static bool haveResult = false;
-        private static string accessToken;
-        private static string oAuth2State;
+        private Uri redirectUri;
+        public bool haveResult = false;
+        public string accessToken;
+        private string oAuth2State;
 
         public BrowserWindow(Uri uri, Uri redirectUri, string oAuth2State)
         {
-            BrowserWindow.redirectUri = redirectUri;
-            BrowserWindow.oAuth2State = oAuth2State;
+            this.redirectUri = redirectUri;
+            this.oAuth2State = oAuth2State;
             InitializeComponent();
             Browser.Navigate(uri);
-        }
-
-        public async Task<string> GetToken()
-        {
-            while (!haveResult)
-            {
-                
-            }
-
-            return accessToken;
         }
 
         private void BrowserNavigating(object sender, NavigatingCancelEventArgs e)

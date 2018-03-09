@@ -175,7 +175,12 @@ namespace DropboxHelper
             Uri authorizeUri = DropboxOAuth2Helper.GetAuthorizeUri(OAuthResponseType.Token, appKey, redirectUri, state: oAuth2State);
             BrowserWindow browser = new BrowserWindow(authorizeUri, redirectUri, oAuth2State);
             browser.ShowDialog();
-            accessToken = await browser.GetToken();
+            while (!browser.haveResult)
+            {
+                if (!browser.IsActive)
+                    return;
+            }
+            accessToken = browser.accessToken;
         }
 
         public static async Task<string> ReadAccessToken()
