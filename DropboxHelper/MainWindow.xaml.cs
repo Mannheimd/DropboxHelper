@@ -51,7 +51,7 @@ namespace DropboxHelper
             CurrentDirectoryPath_Label.Content = path;
         }
 
-        #region UI Inputs
+        #region UI Interaction
 
         private async void GetShareLink_Button_Click(object sender, RoutedEventArgs e)
         {
@@ -135,13 +135,17 @@ namespace DropboxHelper
     {
         private static string accessToken;
         private static string oAuth2State;
-        private static WebBrowser browser;
         private static string appKey = "5xpffww5qkvm3hu";
         private static Uri redirectUri = new Uri("https://localhost/authorise");
 
         public static DropboxClient SetupClient()
         {
             AcquireNewOAuthToken();
+
+            while (accessToken == null)
+            {
+                // Hold here
+            }
 
             try
             {
@@ -165,41 +169,13 @@ namespace DropboxHelper
             }
         }
 
-        private static void AcquireNewOAuthToken()
+        private static async void AcquireNewOAuthToken()
         {
             oAuth2State = Guid.NewGuid().ToString("N");
             Uri authorizeUri = DropboxOAuth2Helper.GetAuthorizeUri(OAuthResponseType.Token, appKey, redirectUri, state: oAuth2State);
-            browser.Navigate(authorizeUri);
-        }
-
-        private static void BrowserNavigating(object sender, NavigatingCancelEventArgs e)
-        {
-            // Shamelessly taken from this example: https://github.com/dropbox/dropbox-sdk-dotnet/blob/master/dropbox-sdk-dotnet/Examples/SimpleTest/LoginForm.xaml.cs
-            if (!e.Uri.ToString().StartsWith(redirectUri.ToString(), StringComparison.OrdinalIgnoreCase))
-            {
-                // we need to ignore all navigation that isn't to the redirect uri.
-                return;
-            }
-
-            try
-            {
-                OAuth2Response result = DropboxOAuth2Helper.ParseTokenFragment(e.Uri);
-                if (result.State != oAuth2State)
-                {
-                    // The state in the response doesn't match the state in the request.
-                    return;
-                }
-
-                accessToken = result.AccessToken;
-            }
-            catch (ArgumentException)
-            {
-                // There was an error in the URI passed to ParseTokenFragment
-            }
-            finally
-            {
-                e.Cancel = true;
-            }
+            BrowserWindow browser = new BrowserWindow(authorizeUri, redirectUri, oAuth2State);
+            browser.ShowDialog();
+            accessToken = await browser.GetToken();
         }
 
         public static async Task<string> ReadAccessToken()
