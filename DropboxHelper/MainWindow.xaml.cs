@@ -142,7 +142,7 @@ namespace DropboxHelper
 
         public static DropboxClient SetupClient()
         {
-            AcquireNewOAuthToken();
+            GetAccessToken();
 
             while (accessToken == null)
             {
@@ -171,7 +171,24 @@ namespace DropboxHelper
             }
         }
 
-        private static async void AcquireNewOAuthToken()
+        private static void GetAccessToken()
+        {
+            if (DropboxAuth.UnsecureCreds("APCDropbox") != null)
+            {
+                accessToken = Encoding.UTF8.GetString(DropboxAuth.UnsecureCreds("APCDropbox"));
+            }
+            else
+            {
+                AcquireNewOAuthToken();
+            }
+        }
+        
+        private static void StoreAccessToken()
+        {
+            DropboxAuth.SecureCreds(accessToken, "APCDropbox");
+        }
+
+        private static void AcquireNewOAuthToken()
         {
             oAuth2State = Guid.NewGuid().ToString("N");
             Uri authorizeUri = DropboxOAuth2Helper.GetAuthorizeUri(OAuthResponseType.Token, appKey, redirectUri, state: oAuth2State);
@@ -183,6 +200,7 @@ namespace DropboxHelper
                     return;
             }
             accessToken = browser.accessToken;
+            StoreAccessToken();
         }
 
         public static async Task<string> ReadAccessToken()
@@ -442,7 +460,7 @@ namespace DropboxHelper
         /// <param name="id">Name for the key</param>
         public static void SecureCreds(string accessToken, string id)
         {
-            byte[] utf8Creds = UTF8Encoding.UTF8.GetBytes(accessToken);
+            byte[] utf8Creds = Encoding.UTF8.GetBytes(accessToken);
 
             byte[] securedCreds = null;
 
