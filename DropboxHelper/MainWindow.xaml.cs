@@ -135,19 +135,9 @@ namespace DropboxHelper
 
     public class DropboxHandler
     {
-        private static string accessToken;
-        private static string oAuth2State;
-        private static string appKey = "5xpffww5qkvm3hu";
-        private static Uri redirectUri = new Uri("https://localhost/authorise");
-
         public static DropboxClient SetupClient()
         {
-            GetAccessToken();
-
-            while (accessToken == null)
-            {
-                // Hold here
-            }
+            string accessToken = DropboxAuth.GetAccessToken();
 
             try
             {
@@ -169,38 +159,6 @@ namespace DropboxHelper
 
                 return null;
             }
-        }
-
-        private static void GetAccessToken()
-        {
-            if (DropboxAuth.UnsecureCreds("APCDropbox") != null)
-            {
-                accessToken = Encoding.UTF8.GetString(DropboxAuth.UnsecureCreds("APCDropbox"));
-            }
-            else
-            {
-                AcquireNewOAuthToken();
-            }
-        }
-        
-        private static void StoreAccessToken()
-        {
-            DropboxAuth.SecureCreds(accessToken, "APCDropbox");
-        }
-
-        private static void AcquireNewOAuthToken()
-        {
-            oAuth2State = Guid.NewGuid().ToString("N");
-            Uri authorizeUri = DropboxOAuth2Helper.GetAuthorizeUri(OAuthResponseType.Token, appKey, redirectUri, state: oAuth2State);
-            BrowserWindow browser = new BrowserWindow(authorizeUri, redirectUri, oAuth2State);
-            browser.ShowDialog();
-            while (!browser.haveResult)
-            {
-                if (!browser.IsActive)
-                    return;
-            }
-            accessToken = browser.accessToken;
-            StoreAccessToken();
         }
 
         public static async Task<List<Metadata>> GetFolderContent(DropboxClient client, string path, bool recursive)
@@ -432,13 +390,50 @@ namespace DropboxHelper
     public class DropboxAuth
     {
         private readonly static byte[] additionalEntropy = { 7, 2, 6, 5 ,9 }; // Used to further encrypt authentication information, changing this will cause any currently stored login details on the client machine to be invalid
+        private static string accessToken;
+        private static string oAuth2State;
+        private static string appKey = "5xpffww5qkvm3hu";
+        private static Uri redirectUri = new Uri("https://localhost/authorise");
+
+        public static string GetAccessToken()
+        {
+            if (UnsecureCreds("APCDropbox") != null)
+            {
+                return Encoding.UTF8.GetString(UnsecureCreds("APCDropbox"));
+            }
+            else
+            {
+                AcquireNewOAuthToken();
+                return accessToken;
+            }
+        }
+
+        private static void StoreAccessToken()
+        {
+            SecureCreds(accessToken, "APCDropbox");
+        }
+
+        private static void AcquireNewOAuthToken()
+        {
+            oAuth2State = Guid.NewGuid().ToString("N");
+            Uri authorizeUri = DropboxOAuth2Helper.GetAuthorizeUri(OAuthResponseType.Token, appKey, redirectUri, state: oAuth2State);
+            BrowserWindow browser = new BrowserWindow(authorizeUri, redirectUri, oAuth2State);
+            browser.ShowDialog();
+            while (!browser.haveResult)
+            {
+                if (!browser.IsActive)
+                    return;
+            }
+            accessToken = browser.accessToken;
+            StoreAccessToken();
+        }
 
         /// <summary>
         /// Secures the user's credentials against the Windows user profile and stores them in the registry under HKCU
         /// </summary>
         /// <param name="apiToken">API token to be stored</param>
         /// <param name="id">Name for the key</param>
-        public static void SecureCreds(string accessToken, string id)
+        private static void SecureCreds(string accessToken, string id)
         {
             byte[] utf8Creds = Encoding.UTF8.GetBytes(accessToken);
 
@@ -468,7 +463,7 @@ namespace DropboxHelper
         /// </summary>
         /// <param name="id">Name for the key</param>
         /// <returns>Returns unsecured utf8-encrypted byte array representing stored credentials</returns>
-        public static byte[] UnsecureCreds(string id)
+        private static byte[] UnsecureCreds(string id)
         {
             // Check if registry path exists
             if (CheckOrCreateRegPath())
@@ -506,7 +501,7 @@ namespace DropboxHelper
         /// Verifies that the registry key to store credentials exists, and creates it if not
         /// </summary>
         /// <returns>true if key is now created and valid, false if not</returns>
-        public static bool CheckOrCreateRegPath()
+        private static bool CheckOrCreateRegPath()
         {
             //TODO: MessageHandler.handleMessage(false, 6, null, "Verifying Jenkins Login registry key path");
             RegistryKey key = null;
