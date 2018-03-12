@@ -433,7 +433,7 @@ namespace DropboxHelper
 
     public class DropboxAuth
     {
-        public static byte[] additionalEntropy = { 7, 2, 6, 5 ,9 }; // Used to further encrypt authentication information, changing this will cause any currently stored login details on the client machine to be invalid
+        private readonly static byte[] additionalEntropy = { 7, 2, 6, 5 ,9 }; // Used to further encrypt authentication information, changing this will cause any currently stored login details on the client machine to be invalid
 
         /// <summary>
         /// Secures the user's credentials against the Windows user profile and stores them in the registry under HKCU
