@@ -203,26 +203,6 @@ namespace DropboxHelper
             StoreAccessToken();
         }
 
-        public static async Task<string> ReadAccessToken()
-        {
-            string file = AppDomain.CurrentDomain.BaseDirectory + @"\accesstoken.txt";
-
-            if (!File.Exists(file))
-                return null;
-
-            try
-            {
-                using (StreamReader reader = File.OpenText(file))
-                {
-                    return reader.ReadToEndAsync().Result;
-                }
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
         public static async Task<List<Metadata>> GetFolderContent(DropboxClient client, string path, bool recursive)
         {
             ListFolderResult result = await client.Files.ListFolderAsync(path, recursive);
