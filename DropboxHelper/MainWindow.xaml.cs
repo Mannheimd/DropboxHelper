@@ -19,6 +19,7 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using Dropbox.Api;
 using Dropbox.Api.Auth;
+using Dropbox.Api.FileRequests;
 using Dropbox.Api.Files;
 using Dropbox.Api.Users;
 using Dropbox.Api.Sharing;
@@ -384,6 +385,20 @@ namespace DropboxHelper
                 //TODO: Add error handling
                 return null;
             }
+        }
+
+        public static async Task<FileRequest> GetFileRequest(DropboxClient client, string path)
+        {
+            IList<FileRequest> requests = (await client.FileRequests.ListAsync()).FileRequests;
+
+            foreach (FileRequest request in requests)
+            {
+                if (request.Destination == path
+                    && request.IsOpen)
+                    return request;
+            }
+
+            return null;
         }
     }
 
