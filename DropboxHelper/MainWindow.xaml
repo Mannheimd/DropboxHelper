@@ -27,5 +27,8 @@
         <Label Content="Ticket number" Margin="0,108,10,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="129"/>
         <Label Content="Account Name" Margin="0,162,10,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="129"/>
         <Button Content="Create folder" Margin="0,216,10,0" VerticalAlignment="Top" Click="CreateFolder_Button_Click" HorizontalAlignment="Right" Width="129"/>
+        <Button Content="Create request" Margin="0,275,10,0" VerticalAlignment="Top" Click="CreateRequest_Button_Click" HorizontalAlignment="Right" Width="129"/>
+        <TextBox x:Name="RequestLink_TextBox" Height="23" Margin="0,326,10,0" TextWrapping="NoWrap" VerticalAlignment="Top" HorizontalAlignment="Right" Width="129" IsReadOnly="True"/>
+        <Label Content="Request Link" Margin="0,300,10,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="129"/>
     </Grid>
 </Window>

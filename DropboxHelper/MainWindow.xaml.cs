@@ -19,6 +19,7 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using Dropbox.Api;
 using Dropbox.Api.Auth;
+using Dropbox.Api.FileRequests;
 using Dropbox.Api.Files;
 using Dropbox.Api.Users;
 using Dropbox.Api.Sharing;
@@ -51,6 +52,16 @@ namespace DropboxHelper
         {
             DropboxFolderContent.ItemsSource = await DropboxHandler.GetFolderContent(client, path, recursive);
             CurrentDirectoryPath_Label.Content = path;
+        }
+
+        private async Task GetFileRequestLink(FolderMetadata folder)
+        {
+            FileRequest fileRequest = await DropboxHandler.HandleCreateFileRequest(client, folder.PathLower, folder.Name, DateTime.Now + new TimeSpan(7, 0, 0, 0));
+
+            if (fileRequest == null)
+                return;
+
+            RequestLink_TextBox.Text = fileRequest.Url;
         }
 
         #region UI Interaction
@@ -128,6 +139,35 @@ namespace DropboxHelper
                 return;
 
             await ChangeToFolder(client, "/ExternalUpload/CloudData/");
+
+            await GetFileRequestLink(folder);
+        }
+
+        private async void CreateRequest_Button_Click(object sender, RoutedEventArgs e)
+        {
+            Metadata selectedItem = DropboxFolderContent.SelectedIndex > -1 ? ((Metadata)DropboxFolderContent.SelectedItem) : null;
+
+            if (selectedItem == null)
+                return;
+
+            if (selectedItem.IsFile)
+            {
+                MessageBox.Show("This is a file. Please select a folder to create an upload request.");
+                return;
+            }
+
+            if (selectedItem.IsDeleted)
+            {
+                MessageBox.Show("This item has been deleted. I don't even know why it's displaying here. I don't even know why I'm making this error, you should never see it... In fact it might be possible to share the file, I haven't checked. I'm just not going to let you try.");
+                return;
+            }
+
+            FolderMetadata folder = selectedItem.AsFolder;
+
+            if (folder == null)
+                return;
+
+            await GetFileRequestLink(folder);
         }
 
         #endregion
@@ -378,6 +418,79 @@ namespace DropboxHelper
             {
                 CreateFolderResult result = await client.Files.CreateFolderV2Async(path);
                 return result.Metadata;
+            }
+            catch
+            {
+                //TODO: Add error handling
+                return null;
+            }
+        }
+
+        public static async Task<FileRequest> HandleCreateFileRequest(DropboxClient client, string path, string title, DateTime deadline)
+        {
+            FileRequest existingRequest = await GetFileRequest(client, path);
+
+            if (existingRequest == null)
+            {
+                return await CreateFileRequest(client, path, title, deadline);
+            }
+            else
+            {
+                return await UpdateFileRequest(client, existingRequest, deadline);
+            }
+        }
+
+        private static async Task<FileRequest> GetFileRequest(DropboxClient client, string path)
+        {
+            IList<FileRequest> requests;
+
+            try
+            {
+                requests = (await client.FileRequests.ListAsync()).FileRequests;
+            }
+            catch
+            {
+                //TODO: Add error handling
+                return null;
+            }
+
+            foreach (FileRequest request in requests)
+            {
+                if (request.Destination == path
+                    && request.IsOpen)
+                    return request;
+            }
+
+            return null;
+        }
+
+        private static async Task<FileRequest> CreateFileRequest(DropboxClient client, string path, string title, DateTime deadline)
+        {
+            try
+            {
+                return await client.FileRequests.CreateAsync(title, path, new FileRequestDeadline(deadline));
+            }
+            catch
+            {
+                //TODO: Add error handling
+                return null;
+            }
+        }
+
+        private static async Task<FileRequest> UpdateFileRequest(DropboxClient client, FileRequest fileRequest, DateTime? deadline = null, string path = null, bool? isOpen = null, string title = null)
+        {
+            UpdateFileRequestDeadline frDeadline = null;
+
+            if (deadline != null)
+            {
+                frDeadline = new UpdateFileRequestDeadline.Update(new FileRequestDeadline((DateTime)deadline));
+            }
+
+            UpdateFileRequestArgs args = new UpdateFileRequestArgs(fileRequest.Id, title, path, frDeadline, isOpen);
+
+            try
+            {
+                return await client.FileRequests.UpdateAsync(args);
             }
             catch
             {
