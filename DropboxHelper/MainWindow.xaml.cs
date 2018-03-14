@@ -389,7 +389,17 @@ namespace DropboxHelper
 
         public static async Task<FileRequest> GetFileRequest(DropboxClient client, string path)
         {
-            IList<FileRequest> requests = (await client.FileRequests.ListAsync()).FileRequests;
+            IList<FileRequest> requests;
+
+            try
+            {
+                requests = (await client.FileRequests.ListAsync()).FileRequests;
+            }
+            catch
+            {
+                //TODO: Add error handling
+                return null;
+            }
 
             foreach (FileRequest request in requests)
             {
@@ -399,6 +409,19 @@ namespace DropboxHelper
             }
 
             return null;
+        }
+
+        public static async Task<FileRequest> CreateFileRequest(DropboxClient client, string path, string title)
+        {
+            try
+            {
+                return await client.FileRequests.CreateAsync(title, path, new FileRequestDeadline(DateTime.Now + new TimeSpan(7, 0, 0, 0)));
+            }
+            catch
+            {
+                //TODO: Add error handling
+                return null;
+            }
         }
     }
 
