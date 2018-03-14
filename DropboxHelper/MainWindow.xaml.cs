@@ -387,6 +387,20 @@ namespace DropboxHelper
             }
         }
 
+        public static async Task<FileRequest> HandleCreateFileRequest(DropboxClient client, string path, string title, DateTime deadline)
+        {
+            FileRequest existingRequest = await GetFileRequest(client, path);
+
+            if (existingRequest == null)
+            {
+                return await CreateFileRequest(client, path, title, deadline);
+            }
+            else
+            {
+                return await UpdateFileRequest(client, existingRequest, deadline);
+            }
+        }
+
         private static async Task<FileRequest> GetFileRequest(DropboxClient client, string path)
         {
             IList<FileRequest> requests;
@@ -411,11 +425,11 @@ namespace DropboxHelper
             return null;
         }
 
-        private static async Task<FileRequest> CreateFileRequest(DropboxClient client, string path, string title)
+        private static async Task<FileRequest> CreateFileRequest(DropboxClient client, string path, string title, DateTime deadline)
         {
             try
             {
-                return await client.FileRequests.CreateAsync(title, path, new FileRequestDeadline(DateTime.Now + new TimeSpan(7, 0, 0, 0)));
+                return await client.FileRequests.CreateAsync(title, path, new FileRequestDeadline(deadline));
             }
             catch
             {
