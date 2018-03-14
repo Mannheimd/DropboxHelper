@@ -54,6 +54,16 @@ namespace DropboxHelper
             CurrentDirectoryPath_Label.Content = path;
         }
 
+        private async Task GetFileRequestLink(FolderMetadata folder)
+        {
+            FileRequest fileRequest = await DropboxHandler.HandleCreateFileRequest(client, folder.PathLower, folder.Name, DateTime.Now + new TimeSpan(7, 0, 0, 0));
+
+            if (fileRequest == null)
+                return;
+
+            RequestLink_TextBox.Text = fileRequest.Url;
+        }
+
         #region UI Interaction
 
         private async void GetShareLink_Button_Click(object sender, RoutedEventArgs e)
@@ -129,6 +139,35 @@ namespace DropboxHelper
                 return;
 
             await ChangeToFolder(client, "/ExternalUpload/CloudData/");
+
+            await GetFileRequestLink(folder);
+        }
+
+        private async void CreateRequest_Button_Click(object sender, RoutedEventArgs e)
+        {
+            Metadata selectedItem = DropboxFolderContent.SelectedIndex > -1 ? ((Metadata)DropboxFolderContent.SelectedItem) : null;
+
+            if (selectedItem == null)
+                return;
+
+            if (selectedItem.IsFile)
+            {
+                MessageBox.Show("This is a file. Please select a folder to create an upload request.");
+                return;
+            }
+
+            if (selectedItem.IsDeleted)
+            {
+                MessageBox.Show("This item has been deleted. I don't even know why it's displaying here. I don't even know why I'm making this error, you should never see it... In fact it might be possible to share the file, I haven't checked. I'm just not going to let you try.");
+                return;
+            }
+
+            FolderMetadata folder = selectedItem.AsFolder;
+
+            if (folder == null)
+                return;
+
+            await GetFileRequestLink(folder);
         }
 
         #endregion
