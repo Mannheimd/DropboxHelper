@@ -4,17 +4,25 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DropboxHelper"
+        xmlns:util="clr-namespace:Wpf.Util"
         mc:Ignorable="d"
         Title="DropboxHelper" Height="588.4" Width="877.8">
     <Window.Resources>
         <local:BoolToFileFolder_Converter x:Key="BoolToFileFolder_Converter"/>
     </Window.Resources>
     <Grid>
-        <ListView x:Name="DropboxFolderContent" Margin="10,34,144.2,24.2" MouseDoubleClick="DropboxFolderContent_ListView_MouseDoubleClick">
+        <ListView x:Name="DropboxFolderContent" Margin="10,34,144.2,24.2" MouseDoubleClick="DropboxFolderContent_ListView_MouseDoubleClick"
+                  util:GridViewSort.AutoSort="True"
+                  util:GridViewSort.SortGlyphAscending="/Images/caret-up.png"
+                  util:GridViewSort.SortGlyphDescending="/Images/caret-down.png">
             <ListView.View>
                 <GridView>
-                    <GridViewColumn Header="Type" Width="100" DisplayMemberBinding="{Binding IsFile, Converter={StaticResource BoolToFileFolder_Converter}}"/>
-                    <GridViewColumn Header="Name" Width="300" DisplayMemberBinding="{Binding Name}"/>
+                    <GridViewColumn Header="Type" Width="100"
+                                    DisplayMemberBinding="{Binding IsFile, Converter={StaticResource BoolToFileFolder_Converter}}"
+                                    util:GridViewSort.PropertyName="IsFile"/>
+                    <GridViewColumn Header="Name" Width="300"
+                                    DisplayMemberBinding="{Binding Name}"
+                                    util:GridViewSort.PropertyName="Name"/>
                 </GridView>
             </ListView.View>
         </ListView>
