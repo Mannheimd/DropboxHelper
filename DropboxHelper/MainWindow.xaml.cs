@@ -32,22 +32,18 @@ namespace DropboxHelper
 
         public async void DoTheThing()
         {
-            client = DropboxHandler.SetupClient();
-
-            await ChangeToFolder(client, "");
+            await ChangeToFolder("");
         }
 
-        DropboxClient client;
-
-        private async Task ChangeToFolder(DropboxClient client, string path, bool recursive = false)
+        private async Task ChangeToFolder(string path, bool recursive = false)
         {
-            DropboxFolderContent.ItemsSource = await DropboxHandler.GetFolderContent(client, path, recursive);
+            DropboxFolderContent.ItemsSource = await DropboxHandler.GetFolderContent(path, recursive);
             CurrentDirectoryPath_Label.Content = path;
         }
 
         private async Task GetFileRequestLink(FolderMetadata folder)
         {
-            FileRequest fileRequest = await DropboxHandler.HandleCreateFileRequest(client, folder.PathLower, folder.Name, DateTime.Now + new TimeSpan(7, 0, 0, 0));
+            FileRequest fileRequest = await DropboxHandler.HandleCreateFileRequest(folder.PathLower, folder.Name, DateTime.Now + new TimeSpan(7, 0, 0, 0));
 
             if (fileRequest == null)
                 return;
@@ -78,7 +74,7 @@ namespace DropboxHelper
                 return;
             }
 
-            SharedLinkMetadata share = await DropboxHandler.HandleShareFile(client, selectedItem, RequestedVisibility.Password.Instance, "password");
+            SharedLinkMetadata share = await DropboxHandler.HandleShareFile(selectedItem, RequestedVisibility.Password.Instance, "password");
 
             if (share.Url != null)
             {
@@ -103,7 +99,7 @@ namespace DropboxHelper
 
             if (selectedItem.IsFolder)
             {
-                await ChangeToFolder(client, selectedItem.PathLower);
+                await ChangeToFolder(selectedItem.PathLower);
             }
         }
 
@@ -118,18 +114,18 @@ namespace DropboxHelper
             
             string newPath = currentPath.Substring(0, slashPos);
 
-            await ChangeToFolder(client, newPath);
+            await ChangeToFolder(newPath);
         }
 
         private async void CreateFolder_Button_Click(object sender, RoutedEventArgs e)
         {
             string path = String.Format("/ExternalUpload/Cloud Data/{0} - {1}", CreateFolder_AccountName_TextBox.Text, CreateFolder_TicketNumber_TextBox.Text);
-            FolderMetadata folder = await DropboxHandler.HandleCreateFolder(client, path);
+            FolderMetadata folder = await DropboxHandler.HandleCreateFolder(path);
 
             if (folder == null)
                 return;
 
-            await ChangeToFolder(client, "/ExternalUpload/Cloud Data/");
+            await ChangeToFolder("/ExternalUpload/Cloud Data/");
 
             await GetFileRequestLink(folder);
         }
@@ -182,9 +178,23 @@ namespace DropboxHelper
         #endregion
     }
 
-    public class DropboxHandler
+    public static class DropboxClientHandler
     {
-        public static DropboxClient SetupClient()
+        private static DropboxClient _client;
+        public static DropboxClient client
+        {
+            get
+            {
+                if (_client == null)
+                {
+                    _client = SetupClient();
+                }
+
+                return _client;
+            }
+        }
+
+        private static DropboxClient SetupClient()
         {
             string accessToken = DropboxAuth.GetAccessToken();
 
@@ -209,38 +219,41 @@ namespace DropboxHelper
                 return null;
             }
         }
+    }
 
-        public static async Task<List<Metadata>> GetFolderContent(DropboxClient client, string path, bool recursive)
+    public class DropboxHandler
+    {
+        public static async Task<List<Metadata>> GetFolderContent(string path, bool recursive)
         {
-            ListFolderResult result = await client.Files.ListFolderAsync(path, recursive);
+            ListFolderResult result = await DropboxClientHandler.client.Files.ListFolderAsync(path, recursive);
             List<Metadata> list = result.Entries.ToList();
 
             while (result.HasMore)
             {
-                result = await client.Files.ListFolderContinueAsync(result.Cursor);
+                result = await DropboxClientHandler.client.Files.ListFolderContinueAsync(result.Cursor);
                 list.AddRange(result.Entries.ToList());
             }
 
             return list;
         }
 
-        public static async Task<SharedLinkMetadata> HandleShareFile(DropboxClient client, Metadata file, RequestedVisibility requestedVisibility, string password = null, bool forceNewLink = false)
+        public static async Task<SharedLinkMetadata> HandleShareFile(Metadata file, RequestedVisibility requestedVisibility, string password = null, bool forceNewLink = false)
         {
-            SharedLinkMetadata existingLink = await GetFileShareLink(client, file);
+            SharedLinkMetadata existingLink = await GetFileShareLink(file);
             if (existingLink != null)
             {
                 if (forceNewLink)
                 {
-                    await RevokeFileShareLink(client, existingLink.Url);
+                    await RevokeFileShareLink(existingLink.Url);
                 }
                 else if (!IsMoreVisiblePermission(existingLink, requestedVisibility))
                 {
-                    return await ChangeShareLinkPermissions(client, existingLink.Url, requestedVisibility);
+                    return await ChangeShareLinkPermissions(existingLink.Url, requestedVisibility);
                 }
                 else return existingLink;
             }
 
-            return await CreateFileShareLink(client, file, requestedVisibility, password);
+            return await CreateFileShareLink(file, requestedVisibility, password);
         }
 
         /// <summary>
@@ -286,7 +299,7 @@ namespace DropboxHelper
                 return 0;
         }
 
-        public static async Task<SharedLinkMetadata> CreateFileShareLink(DropboxClient client, Metadata file, RequestedVisibility requestedVisibility, string password)
+        public static async Task<SharedLinkMetadata> CreateFileShareLink(Metadata file, RequestedVisibility requestedVisibility, string password)
         {
             SharedLinkSettings settings = new SharedLinkSettings();
             if (requestedVisibility.IsPassword)
@@ -306,7 +319,7 @@ namespace DropboxHelper
             CreateSharedLinkWithSettingsArg arg = new CreateSharedLinkWithSettingsArg(file.PathLower, settings);
             try
             {
-                return await client.Sharing.CreateSharedLinkWithSettingsAsync(arg);
+                return await DropboxClientHandler.client.Sharing.CreateSharedLinkWithSettingsAsync(arg);
             }
             catch (ApiException<CreateSharedLinkWithSettingsError> error)
             {
@@ -315,12 +328,12 @@ namespace DropboxHelper
             }
         }
 
-        public static async Task<SharedLinkMetadata> GetFileShareLink(DropboxClient client, Metadata file)
+        public static async Task<SharedLinkMetadata> GetFileShareLink(Metadata file)
         {
             ListSharedLinksResult sharedLinks;
             try
             {
-                sharedLinks = await client.Sharing.ListSharedLinksAsync(file.PathLower);
+                sharedLinks = await DropboxClientHandler.client.Sharing.ListSharedLinksAsync(file.PathLower);
             }
             catch (ApiException<GetSharedLinkFileError> error)
             {
@@ -343,11 +356,11 @@ namespace DropboxHelper
             return sharedLinks.Links[0];
         }
 
-        public static async Task RevokeFileShareLink(DropboxClient client, string url)
+        public static async Task RevokeFileShareLink(string url)
         {
             try
             {
-                await client.Sharing.RevokeSharedLinkAsync(url);
+                await DropboxClientHandler.client.Sharing.RevokeSharedLinkAsync(url);
             }
             catch (ApiException<RevokeSharedLinkError> error)
             {
@@ -355,11 +368,11 @@ namespace DropboxHelper
             }
         }
 
-        public static async Task<SharedLinkMetadata> GetShareLinkMetadata(DropboxClient client, string url, string password)
+        public static async Task<SharedLinkMetadata> GetShareLinkMetadata(string url, string password)
         {
             try
             {
-                return await client.Sharing.GetSharedLinkMetadataAsync(url);
+                return await DropboxClientHandler.client.Sharing.GetSharedLinkMetadataAsync(url);
             }
             catch (ApiException<SharedLinkError> error)
             {
@@ -368,13 +381,13 @@ namespace DropboxHelper
             }
         }
 
-        public static async Task<SharedLinkMetadata> ChangeShareLinkPermissions(DropboxClient client, string url, RequestedVisibility requestedVisibility)
+        public static async Task<SharedLinkMetadata> ChangeShareLinkPermissions(string url, RequestedVisibility requestedVisibility)
         {
             SharedLinkSettings settings = new SharedLinkSettings(requestedVisibility);
 
             try
             {
-                return await client.Sharing.ModifySharedLinkSettingsAsync(url, settings);
+                return await DropboxClientHandler.client.Sharing.ModifySharedLinkSettingsAsync(url, settings);
             }
             catch (ApiException<ModifySharedLinkSettingsError> error)
             {
@@ -383,12 +396,12 @@ namespace DropboxHelper
             }
         }
 
-        public static async Task<FolderMetadata> HandleCreateFolder(DropboxClient client, string path)
+        public static async Task<FolderMetadata> HandleCreateFolder(string path)
         {
-            FolderMetadata currentFolder = await GetFolder(client, path);
+            FolderMetadata currentFolder = await GetFolder(path);
             if (currentFolder == null)
             {
-                return await CreateFolder(client, path);
+                return await CreateFolder(path);
             }
             else
             {
@@ -396,13 +409,13 @@ namespace DropboxHelper
             }
         }
 
-        public static async Task<FolderMetadata> GetFolder(DropboxClient client, string path)
+        public static async Task<FolderMetadata> GetFolder(string path)
         {
             Metadata metadata = new Metadata();
 
             try
             {
-                metadata = await client.Files.GetMetadataAsync(path);
+                metadata = await DropboxClientHandler.client.Files.GetMetadataAsync(path);
             }
             catch
             {
@@ -421,11 +434,11 @@ namespace DropboxHelper
             }
         }
 
-        public static async Task<FolderMetadata> CreateFolder(DropboxClient client, string path)
+        public static async Task<FolderMetadata> CreateFolder(string path)
         {
             try
             {
-                CreateFolderResult result = await client.Files.CreateFolderV2Async(path);
+                CreateFolderResult result = await DropboxClientHandler.client.Files.CreateFolderV2Async(path);
                 return result.Metadata;
             }
             catch
@@ -435,27 +448,27 @@ namespace DropboxHelper
             }
         }
 
-        public static async Task<FileRequest> HandleCreateFileRequest(DropboxClient client, string path, string title, DateTime deadline)
+        public static async Task<FileRequest> HandleCreateFileRequest(string path, string title, DateTime deadline)
         {
-            FileRequest existingRequest = await GetFileRequest(client, path);
+            FileRequest existingRequest = await GetFileRequest(path);
 
             if (existingRequest == null)
             {
-                return await CreateFileRequest(client, path, title, deadline);
+                return await CreateFileRequest(path, title, deadline);
             }
             else
             {
-                return await UpdateFileRequest(client, existingRequest, deadline);
+                return await UpdateFileRequest(existingRequest, deadline);
             }
         }
 
-        private static async Task<FileRequest> GetFileRequest(DropboxClient client, string path)
+        private static async Task<FileRequest> GetFileRequest(string path)
         {
             IList<FileRequest> requests;
 
             try
             {
-                requests = (await client.FileRequests.ListAsync()).FileRequests;
+                requests = (await DropboxClientHandler.client.FileRequests.ListAsync()).FileRequests;
             }
             catch
             {
@@ -473,11 +486,11 @@ namespace DropboxHelper
             return null;
         }
 
-        private static async Task<FileRequest> CreateFileRequest(DropboxClient client, string path, string title, DateTime deadline)
+        private static async Task<FileRequest> CreateFileRequest(string path, string title, DateTime deadline)
         {
             try
             {
-                return await client.FileRequests.CreateAsync(title, path, new FileRequestDeadline(deadline));
+                return await DropboxClientHandler.client.FileRequests.CreateAsync(title, path, new FileRequestDeadline(deadline));
             }
             catch
             {
@@ -486,7 +499,7 @@ namespace DropboxHelper
             }
         }
 
-        private static async Task<FileRequest> UpdateFileRequest(DropboxClient client, FileRequest fileRequest, DateTime? deadline = null, string path = null, bool? isOpen = null, string title = null)
+        private static async Task<FileRequest> UpdateFileRequest(FileRequest fileRequest, DateTime? deadline = null, string path = null, bool? isOpen = null, string title = null)
         {
             UpdateFileRequestDeadline frDeadline = null;
 
@@ -499,7 +512,7 @@ namespace DropboxHelper
 
             try
             {
-                return await client.FileRequests.UpdateAsync(args);
+                return await DropboxClientHandler.client.FileRequests.UpdateAsync(args);
             }
             catch
             {
@@ -508,7 +521,7 @@ namespace DropboxHelper
             }
         }
 
-        private async Task UploadFile(DropboxClient client, string localFilePath, string dropboxFilePath)
+        private async Task UploadFile(string localFilePath, string dropboxFilePath)
         {
             // Shamelessly acquired from https://stackoverflow.com/questions/40970095/file-uploading-dropbox-v2-0-api
 
@@ -517,16 +530,16 @@ namespace DropboxHelper
             {
                 if (fileStream.Length <= ChunkSize)
                 {
-                    await client.Files.UploadAsync(dropboxFilePath, body: fileStream);
+                    await DropboxClientHandler.client.Files.UploadAsync(dropboxFilePath, body: fileStream);
                 }
                 else
                 {
-                    await ChunkUploadFile(client, dropboxFilePath, fileStream, (int)ChunkSize);
+                    await ChunkUploadFile(dropboxFilePath, fileStream, (int)ChunkSize);
                 }
             }
         }
 
-        private async Task ChunkUploadFile(DropboxClient client, string dropboxFilePath, FileStream stream, int chunkSize)
+        private async Task ChunkUploadFile(string dropboxFilePath, FileStream stream, int chunkSize)
         {
             // Shamelessly acquired from https://stackoverflow.com/questions/40970095/file-uploading-dropbox-v2-0-api
 
@@ -541,7 +554,7 @@ namespace DropboxHelper
                 {
                     if (idx == 0)
                     {
-                        var result = await client.Files.UploadSessionStartAsync(false, memStream);
+                        var result = await DropboxClientHandler.client.Files.UploadSessionStartAsync(false, memStream);
                         sessionId = result.SessionId;
                     }
                     else
@@ -550,12 +563,12 @@ namespace DropboxHelper
 
                         if (idx == numChunks - 1)
                         {
-                            FileMetadata fileMetadata = await client.Files.UploadSessionFinishAsync(cursor, new CommitInfo(dropboxFilePath), memStream);
+                            FileMetadata fileMetadata = await DropboxClientHandler.client.Files.UploadSessionFinishAsync(cursor, new CommitInfo(dropboxFilePath), memStream);
                             Console.WriteLine(fileMetadata.PathDisplay);
                         }
                         else
                         {
-                            await client.Files.UploadSessionAppendV2Async(cursor, false, memStream);
+                            await DropboxClientHandler.client.Files.UploadSessionAppendV2Async(cursor, false, memStream);
                         }
                     }
                 }
