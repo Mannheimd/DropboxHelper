@@ -14,6 +14,7 @@ using Dropbox.Api.FileRequests;
 using Dropbox.Api.Files;
 using Dropbox.Api.Sharing;
 using Microsoft.Win32;
+using System.IO;
 
 namespace DropboxHelper
 {
@@ -486,6 +487,60 @@ namespace DropboxHelper
             {
                 //TODO: Add error handling
                 return null;
+            }
+        }
+
+        private async Task UploadFile(DropboxClient client, string localFilePath, string dropboxFilePath)
+        {
+            // Shamelessly acquired from https://stackoverflow.com/questions/40970095/file-uploading-dropbox-v2-0-api
+
+            const int ChunkSize = 4096 * 1024;
+            using (var fileStream = File.Open(localFilePath, FileMode.Open))
+            {
+                if (fileStream.Length <= ChunkSize)
+                {
+                    await client.Files.UploadAsync(dropboxFilePath, body: fileStream);
+                }
+                else
+                {
+                    await ChunkUploadFile(client, dropboxFilePath, fileStream, (int)ChunkSize);
+                }
+            }
+        }
+
+        private async Task ChunkUploadFile(DropboxClient client, String path, FileStream stream, int chunkSize)
+        {
+            // Shamelessly acquired from https://stackoverflow.com/questions/40970095/file-uploading-dropbox-v2-0-api
+
+            ulong numChunks = (ulong)Math.Ceiling((double)stream.Length / chunkSize);
+            byte[] buffer = new byte[chunkSize];
+            string sessionId = null;
+            for (ulong idx = 0; idx < numChunks; idx++)
+            {
+                var byteRead = stream.Read(buffer, 0, chunkSize);
+
+                using (var memStream = new MemoryStream(buffer, 0, byteRead))
+                {
+                    if (idx == 0)
+                    {
+                        var result = await client.Files.UploadSessionStartAsync(false, memStream);
+                        sessionId = result.SessionId;
+                    }
+                    else
+                    {
+                        var cursor = new UploadSessionCursor(sessionId, (ulong)chunkSize * idx);
+
+                        if (idx == numChunks - 1)
+                        {
+                            FileMetadata fileMetadata = await client.Files.UploadSessionFinishAsync(cursor, new CommitInfo(path), memStream);
+                            Console.WriteLine(fileMetadata.PathDisplay);
+                        }
+                        else
+                        {
+                            await client.Files.UploadSessionAppendV2Async(cursor, false, memStream);
+                        }
+                    }
+                }
             }
         }
     }
