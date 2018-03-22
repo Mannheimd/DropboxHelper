@@ -161,6 +161,24 @@ namespace DropboxHelper
             await GetFileRequestLink(folder);
         }
 
+        private async void DropboxFileUpload_Drop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+
+                foreach (string filePath in files)
+                {
+                    FileInfo fileInfo = new FileInfo(filePath);
+
+                    if (!fileInfo.Exists)
+                        continue;
+
+                    DropboxUploadPendingItem pendingItem = new DropboxUploadPendingItem(filePath, CurrentDirectoryPath_Label.Content.ToString() + "/" + fileInfo.Name);
+                }
+            }
+        }
+
         #endregion
     }
 
@@ -508,7 +526,7 @@ namespace DropboxHelper
             }
         }
 
-        private async Task ChunkUploadFile(DropboxClient client, String path, FileStream stream, int chunkSize)
+        private async Task ChunkUploadFile(DropboxClient client, string dropboxFilePath, FileStream stream, int chunkSize)
         {
             // Shamelessly acquired from https://stackoverflow.com/questions/40970095/file-uploading-dropbox-v2-0-api
 
@@ -532,7 +550,7 @@ namespace DropboxHelper
 
                         if (idx == numChunks - 1)
                         {
-                            FileMetadata fileMetadata = await client.Files.UploadSessionFinishAsync(cursor, new CommitInfo(path), memStream);
+                            FileMetadata fileMetadata = await client.Files.UploadSessionFinishAsync(cursor, new CommitInfo(dropboxFilePath), memStream);
                             Console.WriteLine(fileMetadata.PathDisplay);
                         }
                         else
@@ -542,6 +560,72 @@ namespace DropboxHelper
                     }
                 }
             }
+        }
+    }
+
+    public class DropboxUploadPendingItem
+    {
+        public string localFilePath { get; set; }
+        public string dropboxFilePath { get; set; }
+
+        public DropboxUploadPendingItem(string localFilePath, string dropboxFilePath)
+        {
+            this.localFilePath = localFilePath;
+            this.dropboxFilePath = dropboxFilePath;
+        }
+    }
+
+    public static class DropboxUploader
+    {
+        private static List<DropboxUploadPendingItem> _fileUploadQueue;
+        public static List<DropboxUploadPendingItem> fileUploadQueue
+        {
+            get
+            {
+                return _fileUploadQueue;
+            }
+        }
+
+        private static Task uploadTask = UploadAsync();
+
+        public static void QueueFile(DropboxUploadPendingItem item)
+        {
+            _fileUploadQueue.Add(item);
+            TriggerUploadTask();
+        }
+
+        public static void RemoveFile(DropboxUploadPendingItem item)
+        {
+            _fileUploadQueue.Remove(item);
+            TriggerUploadTask();
+        }
+
+        private static void TriggerUploadTask()
+        {
+            if (uploadTask.Status == TaskStatus.WaitingForChildrenToComplete)
+            {
+                uploadTask.Wait();
+                uploadTask.Start();
+            }
+            else if (uploadTask.Status != TaskStatus.Running
+                && uploadTask.Status != TaskStatus.WaitingToRun)
+            {
+                uploadTask.Start();
+            }
+        }
+
+        private static Task UploadAsync()
+        {
+            while(_fileUploadQueue.Count != 0)
+            {
+                DropboxUploadPendingItem file = fileUploadQueue[0];
+
+                // Do the upload
+
+                _fileUploadQueue.Remove(file);
+            }
+
+            return Task.CompletedTask;
         }
     }
 
