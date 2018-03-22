@@ -520,60 +520,6 @@ namespace DropboxHelper
                 return null;
             }
         }
-
-        private async Task UploadFile(string localFilePath, string dropboxFilePath)
-        {
-            // Shamelessly acquired from https://stackoverflow.com/questions/40970095/file-uploading-dropbox-v2-0-api
-
-            const int ChunkSize = 4096 * 1024;
-            using (var fileStream = File.Open(localFilePath, FileMode.Open))
-            {
-                if (fileStream.Length <= ChunkSize)
-                {
-                    await DropboxClientHandler.client.Files.UploadAsync(dropboxFilePath, body: fileStream);
-                }
-                else
-                {
-                    await ChunkUploadFile(dropboxFilePath, fileStream, (int)ChunkSize);
-                }
-            }
-        }
-
-        private async Task ChunkUploadFile(string dropboxFilePath, FileStream stream, int chunkSize)
-        {
-            // Shamelessly acquired from https://stackoverflow.com/questions/40970095/file-uploading-dropbox-v2-0-api
-
-            ulong numChunks = (ulong)Math.Ceiling((double)stream.Length / chunkSize);
-            byte[] buffer = new byte[chunkSize];
-            string sessionId = null;
-            for (ulong idx = 0; idx < numChunks; idx++)
-            {
-                var byteRead = stream.Read(buffer, 0, chunkSize);
-
-                using (var memStream = new MemoryStream(buffer, 0, byteRead))
-                {
-                    if (idx == 0)
-                    {
-                        var result = await DropboxClientHandler.client.Files.UploadSessionStartAsync(false, memStream);
-                        sessionId = result.SessionId;
-                    }
-                    else
-                    {
-                        var cursor = new UploadSessionCursor(sessionId, (ulong)chunkSize * idx);
-
-                        if (idx == numChunks - 1)
-                        {
-                            FileMetadata fileMetadata = await DropboxClientHandler.client.Files.UploadSessionFinishAsync(cursor, new CommitInfo(dropboxFilePath), memStream);
-                            Console.WriteLine(fileMetadata.PathDisplay);
-                        }
-                        else
-                        {
-                            await DropboxClientHandler.client.Files.UploadSessionAppendV2Async(cursor, false, memStream);
-                        }
-                    }
-                }
-            }
-        }
     }
 
     public class DropboxUploadPendingItem
@@ -590,7 +536,7 @@ namespace DropboxHelper
 
     public static class DropboxUploader
     {
-        private static List<DropboxUploadPendingItem> _fileUploadQueue;
+        private static List<DropboxUploadPendingItem> _fileUploadQueue = new List<DropboxUploadPendingItem>();
         public static List<DropboxUploadPendingItem> fileUploadQueue
         {
             get
@@ -598,6 +544,8 @@ namespace DropboxHelper
                 return _fileUploadQueue;
             }
         }
+
+        private const int chunkSize = 4096 * 1024;
 
         private static Task uploadTask = UploadAsync();
 
@@ -627,18 +575,69 @@ namespace DropboxHelper
             }
         }
 
-        private static Task UploadAsync()
+        private async static Task UploadAsync()
         {
             while(_fileUploadQueue.Count != 0)
             {
                 DropboxUploadPendingItem file = fileUploadQueue[0];
 
-                // Do the upload
+                await UploadFile(file.localFilePath, file.dropboxFilePath);
 
                 _fileUploadQueue.Remove(file);
             }
+        }
 
-            return Task.CompletedTask;
+        private static async Task UploadFile(string localFilePath, string dropboxFilePath)
+        {
+            // Shamelessly acquired from https://stackoverflow.com/questions/40970095/file-uploading-dropbox-v2-0-api
+
+            using (var fileStream = File.Open(localFilePath, FileMode.Open))
+            {
+                if (fileStream.Length <= chunkSize)
+                {
+                    await DropboxClientHandler.client.Files.UploadAsync(dropboxFilePath, body: fileStream);
+                }
+                else
+                {
+                    await ChunkUploadFile(dropboxFilePath, fileStream);
+                }
+            }
+        }
+
+        private static async Task ChunkUploadFile(string dropboxFilePath, FileStream stream)
+        {
+            // Shamelessly acquired from https://stackoverflow.com/questions/40970095/file-uploading-dropbox-v2-0-api
+
+            ulong numChunks = (ulong)Math.Ceiling((double)stream.Length / chunkSize);
+            byte[] buffer = new byte[chunkSize];
+            string sessionId = null;
+            for (ulong idx = 0; idx < numChunks; idx++)
+            {
+                var byteRead = stream.Read(buffer, 0, chunkSize);
+
+                using (var memStream = new MemoryStream(buffer, 0, byteRead))
+                {
+                    if (idx == 0)
+                    {
+                        var result = await DropboxClientHandler.client.Files.UploadSessionStartAsync(false, memStream);
+                        sessionId = result.SessionId;
+                    }
+                    else
+                    {
+                        var cursor = new UploadSessionCursor(sessionId, chunkSize * idx);
+
+                        if (idx == numChunks - 1)
+                        {
+                            FileMetadata fileMetadata = await DropboxClientHandler.client.Files.UploadSessionFinishAsync(cursor, new CommitInfo(dropboxFilePath), memStream);
+                            Console.WriteLine(fileMetadata.PathDisplay);
+                        }
+                        else
+                        {
+                            await DropboxClientHandler.client.Files.UploadSessionAppendV2Async(cursor, false, memStream);
+                        }
+                    }
+                }
+            }
         }
     }
 
