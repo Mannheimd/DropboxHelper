@@ -14,7 +14,10 @@
         <ListView x:Name="DropboxFolderContent" Margin="10,34,144.2,24.2" MouseDoubleClick="DropboxFolderContent_ListView_MouseDoubleClick"
                   util:GridViewSort.AutoSort="True"
                   util:GridViewSort.SortGlyphAscending="/Images/caret-up.png"
-                  util:GridViewSort.SortGlyphDescending="/Images/caret-down.png">
+                  util:GridViewSort.SortGlyphDescending="/Images/caret-down.png"
+                  AllowDrop="True"
+                  Drop="DropboxFileUpload_DragDrop"
+                  DragOver="DropboxFileUpload_DragOver">
             <ListView.View>
                 <GridView>
                     <GridViewColumn Header="Type" Width="100"

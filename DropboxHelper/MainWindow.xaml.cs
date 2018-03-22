@@ -157,7 +157,19 @@ namespace DropboxHelper
             await GetFileRequestLink(folder);
         }
 
-        private async void DropboxFileUpload_Drop(object sender, DragEventArgs e)
+        private void DropboxFileUpload_DragOver(object sender, DragEventArgs e)
+        {if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                e.Effects = DragDropEffects.Copy;
+                e.Handled = true;
+            }
+            else
+            {
+                e.Effects = DragDropEffects.None;
+            }
+        }
+
+        private void DropboxFileUpload_DragDrop(object sender, DragEventArgs e)
         {
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
@@ -171,6 +183,8 @@ namespace DropboxHelper
                         continue;
 
                     DropboxUploadPendingItem pendingItem = new DropboxUploadPendingItem(filePath, CurrentDirectoryPath_Label.Content.ToString() + "/" + fileInfo.Name);
+
+                    DropboxUploader.QueueFile(pendingItem);
                 }
             }
         }
@@ -545,9 +559,9 @@ namespace DropboxHelper
             }
         }
 
-        private const int chunkSize = 4096 * 1024;
+        private static bool uploadRunning = false;
 
-        private static Task uploadTask = UploadAsync();
+        private const int chunkSize = 4096 * 1024;
 
         public static void QueueFile(DropboxUploadPendingItem item)
         {
@@ -561,23 +575,17 @@ namespace DropboxHelper
             TriggerUploadTask();
         }
 
-        private static void TriggerUploadTask()
+        private async static void TriggerUploadTask()
         {
-            if (uploadTask.Status == TaskStatus.WaitingForChildrenToComplete)
+            if (!uploadRunning)
             {
-                uploadTask.Wait();
-                uploadTask.Start();
-            }
-            else if (uploadTask.Status != TaskStatus.Running
-                && uploadTask.Status != TaskStatus.WaitingToRun)
-            {
-                uploadTask.Start();
+                await UploadAsync().ConfigureAwait(false);
             }
         }
 
         private async static Task UploadAsync()
         {
-            while(_fileUploadQueue.Count != 0)
+            while (_fileUploadQueue.Count != 0)
             {
                 DropboxUploadPendingItem file = fileUploadQueue[0];
 
