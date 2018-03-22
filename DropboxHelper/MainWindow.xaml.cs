@@ -35,6 +35,11 @@ namespace DropboxHelper
             await ChangeToFolder("");
         }
 
+        public async Task RefreshFolder(bool recursive = false)
+        {
+            DropboxFolderContent.ItemsSource = await DropboxHandler.GetFolderContent(CurrentDirectoryPath_Label.Content.ToString(), recursive);
+        }
+
         private async Task ChangeToFolder(string path, bool recursive = false)
         {
             DropboxFolderContent.ItemsSource = await DropboxHandler.GetFolderContent(path, recursive);
